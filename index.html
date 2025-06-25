@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.30</title>
+  <title>BladeTrack Web App v1.31</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.30</h2>
+<h2>BladeTrack Web App v1.31</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
@@ -79,6 +79,60 @@ function initMap() {
     center: unionSquare
   });
   new google.maps.Marker({ position: unionSquare, map: map });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+  renderFoods();
+});
+
+function renderFoods() {
+  const meals = ["Breakfast", "Lunch", "Dinner"];
+  const colors = { green: "Healthy", yellow: "Moderate", red: "Unhealthy" };
+  const foods = [
+    { name: "Peanut Butter (1 tsp)", color: "green", meal: "Breakfast" },
+    { name: "Whey Protein Isolate", color: "green", meal: "Breakfast" },
+    { name: "Whey Protein Isolate", color: "green", meal: "Lunch" },
+    { name: "Salmon", color: "green", meal: "Lunch" },
+    { name: "Salmon", color: "green", meal: "Dinner" },
+    { name: "Chicken Breast", color: "green", meal: "Lunch" },
+    { name: "Chicken Breast", color: "green", meal: "Dinner" },
+    { name: "Collard Greens (1 cup)", color: "green", meal: "Dinner" },
+  ];
+
+  const log = document.getElementById("mealLog");
+  log.innerHTML = "";
+  meals.forEach(meal => {
+    const mealHeader = document.createElement("h4");
+    mealHeader.innerText = meal;
+    log.appendChild(mealHeader);
+    foods.filter(f => f.meal === meal).forEach(food => {
+      const btn = document.createElement("button");
+      btn.className = `food-button ${food.color}`;
+      btn.innerText = food.name;
+      btn.onclick = () => logFood(meal, food.name);
+      log.appendChild(btn);
+    });
+  });
+
+  const snackList = document.getElementById("snacks");
+  snackList.innerHTML = "";
+  const snacks = [
+    { name: "Potato Chips – Not a good sodium source", color: "red" },
+    { name: "Gummy Worms – Sugar high, not filling", color: "red" },
+    { name: "Candy Bar – Empty calories, low satiety", color: "red" }
+  ];
+  snacks.forEach(snack => {
+    const btn = document.createElement("button");
+    btn.className = `food-button ${snack.color}`;
+    btn.innerText = snack.name;
+    btn.onclick = () => logFood("Snack", snack.name);
+    snackList.appendChild(btn);
+  });
+}
+
+function logFood(meal, itemName) {
+  console.log(`Logged food: ${meal} - ${itemName}`);
+  // Extend this to track calories/macros
 }
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNyTZL3SySu9n5tkcyc9fiU34d2iviE9E&callback=initMap" async defer></script>
