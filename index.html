@@ -1,593 +1,326 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BladeTrack Web App v1.47</title>
-<style>
-  body { font-family: sans-serif; max-width: 700px; margin: 20px auto; padding: 20px; }
-  h2,h3,h4 { margin-bottom: 5px; }
-  p { margin: 5px 0 15px; }
-  label { font-weight: bold; }
-  input[type=number], input[type=time], select { padding: 6px; font-size: 14px; margin-left: 8px; width: 60px; }
-  .meal-section { margin-bottom: 30px; }
-  .food-button {
-    display: block; width: 100%; padding: 10px; margin: 4px 0;
-    border: none; border-radius: 5px; cursor: pointer; text-align: left;
-    font-size: 14px; transition: background-color 0.3s ease;
-  }
-  .green { background: #e0f7e9; border-left: 5px solid green; }
-  .yellow { background: #fff9e6; border-left: 5px solid orange; }
-  .red { background: #fdecea; border-left: 5px solid red; }
-  .selected { font-weight: bold; opacity: 0.8; }
-  #map { height: 300px; margin: 20px 0; }
-  .hot-warning { color: orange; font-weight: bold; margin-top: 10px; }
-  #foodSummary, #mealTotals, #dayTotals { margin-top: 10px; }
-  table { border-collapse: collapse; width: 100%; margin-top: 10px; }
-  th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-  th { background-color: #f9f9f9; }
-  #weight-progress-chart { margin-top: 10px; }
-  .error { color: red; font-weight: bold; }
-  .progress-bar {
-    background-color: #ddd;
-    border-radius: 5px;
-    overflow: hidden;
-    height: 14px;
-    margin-top: 4px;
-  }
-  .progress-fill {
-    height: 100%;
-    transition: width 0.3s ease;
-  }
-  .progress-green { background-color: #4caf50; }
-  .progress-orange { background-color: #ff9800; }
-  .progress-red { background-color: #f44336; }
-  button.small-btn {
-    font-size: 12px; padding: 6px 10px; margin-left: 10px; cursor: pointer;
-  }
-  #electrolyteAdvice {
-    margin-top: 10px;
-    padding: 10px;
-    background-color: #fff4e5;
-    border-left: 5px solid orange;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BladeTrack Web App v1.46</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
+    h3 { margin-top: 30px; }
+    h4 { font-size: 20px; margin-top: 20px; }
+    .hot-warning { color: orange; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
+    th { background-color: #f9f9f9; }
+    #map { height: 300px; margin: 20px 0; }
+    .food-button { display: block; width: 100%; margin: 5px 0; padding: 10px; font-size: 14px; border-radius: 5px; border: none; text-align: left; cursor: pointer; }
+    .green { background-color: #e0f7e9; border-left: 5px solid green; }
+    .yellow { background-color: #fff9e6; border-left: 5px solid orange; }
+    .red { background-color: #fdecea; border-left: 5px solid red; }
+    .selected { font-weight: bold; opacity: 0.8; }
+  </style>
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.47</h2>
-<p>Track calories, macros, rollerblading, weight loss, and electrolytes smartly.</p>
+<h2>BladeTrack Web App v1.46</h2>
+<p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
-<div>
-  <label>Weight (lbs):</label>
-  <input type="number" id="weight" value="175" min="80" max="500" />
-</div>
-<div>
-  <label>Height:</label>
-  <input type="number" id="heightFt" value="5" min="1" max="8" /> ft
-  <input type="number" id="heightIn" value="10" min="0" max="11" /> in
-</div>
-<div>
-  <label>Gender:</label>
+<p>Weight (lbs): <input type="number" id="weight" value="175" /></p>
+<p>Height: <input type="number" id="heightFt" value="5" style="width:50px" /> ft 
+   <input type="number" id="heightIn" value="10" style="width:50px" /> in</p>
+<p>Gender:
   <select id="gender">
     <option value="male">Male</option>
     <option value="female">Female</option>
     <option value="nonbinary">Nonbinary</option>
   </select>
-</div>
-<div>
-  <label>Daily Calorie Goal (kcal):</label>
-  <input type="number" id="calorieGoal" value="1500" min="800" max="5000" />
-</div>
-<div>
-  <label>Weight Loss Goal (lbs/week):</label>
-  <input type="number" id="weeklyLossGoal" value="2" min="0" max="5" step="0.1" />
-</div>
+</p>
+<p>Daily Calorie Goal (kcal): <input type="number" id="calorieGoal" value="1500" /></p>
+<p>Weight Loss Goal (lbs per week): <input type="number" id="weeklyLossGoal" value="2" /></p>
 
-<div>
-  <label>Calorie % by Meal (must total 100%):</label><br />
-  Breakfast <input type="number" id="pctBreakfast" value="25" min="0" max="100" style="width:50px" />%
-  Lunch <input type="number" id="pctLunch" value="40" min="0" max="100" style="width:50px" />%
-  Snacks <input type="number" id="pctSnacks" value="10" min="0" max="100" style="width:50px" />%
-  Dinner <input type="number" id="pctDinner" value="25" min="0" max="100" style="width:50px" />
-  <span id="pctError" class="error"></span>
-</div>
-
-<hr />
+<p>Target Calorie Distribution: 
+  Breakfast <input type="number" id="pctBreakfast" value="25" style="width:60px" />% 
+  Lunch <input type="number" id="pctLunch" value="40" style="width:60px" />% 
+  Snacks <input type="number" id="pctSnacks" value="10" style="width:60px" />% 
+  Dinner <input type="number" id="pctDinner" value="25" style="width:60px" />%
+</p>
 
 <h3>Meal Tracking</h3>
 
-<div id="mealTracking">
-
-  <div class="meal-section" id="breakfastSection">
-    <h4>Breakfast <span id="breakfastTargetCal"></span></h4>
-    <div id="breakfastFoods"></div>
-    <div id="breakfastLog"></div>
-    <div id="breakfastTotals"></div>
-  </div>
-
-  <div class="meal-section" id="lunchSection">
-    <h4>Lunch <span id="lunchTargetCal"></span></h4>
-    <div id="lunchFoods"></div>
-    <div id="lunchLog"></div>
-    <div id="lunchTotals"></div>
-  </div>
-
-  <div class="meal-section" id="snacksSection">
-    <h4>Snacks (Unhealthy Choices) <span id="snacksTargetCal"></span></h4>
-    <div id="snacksFoods"></div>
-    <div id="snacksLog"></div>
-    <div id="snacksTotals"></div>
-  </div>
-
-  <div class="meal-section" id="dinnerSection">
-    <h4>Dinner <span id="dinnerTargetCal"></span></h4>
-    <div id="dinnerFoods"></div>
-    <div id="dinnerLog"></div>
-    <div id="dinnerTotals"></div>
-  </div>
-
-</div>
-
-<hr />
+<div id="mealSections"></div>
 
 <h3>Rollerblading Session Tracker</h3>
-<p>
-  Start time: <input type="time" id="bladeStart" />
-  End time: <input type="time" id="bladeEnd" />
-  Distance (miles): <input type="number" id="bladeMiles" step="0.1" min="0" />
-  <button onclick="calculateBladeCalories()">Calculate Calories Burned</button>
-  <button class="small-btn" onclick="undoLastPoint()">Undo Last Point</button>
-  <button class="small-btn" onclick="resetPath()">Reset Path</button>
+<p>Start time: <input type="time" id="bladeStart" /> 
+   End time: <input type="time" id="bladeEnd" /> 
+   Distance (miles): <input type="number" id="bladeMiles" step="0.1" />
 </p>
+<button onclick="calculateBladeCalories()">Calculate Blade Calories</button>
 <div id="bladeResult"></div>
-
 <div id="weather"></div>
 <div id="warning" class="hot-warning"></div>
-<div id="electrolyteAdvice"></div>
-
-<div id="map"></div>
-
-<hr />
 
 <h3>Weight Tracking & Progress</h3>
-<p>
-  Log Today's Weight (lbs):
-  <input type="number" id="dailyWeight" min="80" max="500" />
-  <button onclick="logWeight()">Log Weight</button>
-</p>
+<p>Log Today's Weight (lbs): <input type="number" id="dailyWeight" />
+<button onclick="logWeight()">Log Weight</button></p>
 <canvas id="weight-progress-chart" width="600" height="200"></canvas>
 <div id="weightLog"></div>
 
-<hr />
+<h3>Food Log Summary</h3>
+<div id="foodSummary"></div>
 
-<h3>Daily Summary</h3>
-<div id="dayTotals"></div>
+<div id="day-totals"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNyTZL3SySu9n5tkcyc9fiU34d2iviE9E&callback=initMap" async defer></script>
 
 <script>
-"use strict";
+  // Food data with macros and calories
+  const foods = {
+    breakfast: [
+      { name: "Banana baby food (1 container)", calories: 100, protein: 1, carbs: 23, fat: 0, color: "green", benefit: "Potassium rich, good for electrolytes." },
+      { name: "Peanut butter (1 tsp, smooth, unsalted)", calories: 32, protein: 1.3, carbs: 1, fat: 2.7, color: "green", benefit: "Healthy fats and protein." },
+      { name: "Tofu (102.5g, half package)", calories: 200, protein: 20, carbs: 2, fat: 12, color: "green", benefit: "Good plant-based protein." },
+      { name: "Plain nonfat yogurt (1 cup)", calories: 150, protein: 13, carbs: 17, fat: 0, color: "green", benefit: "Calcium and protein." },
+      { name: "Whey protein isolate (1 scoop)", calories: 110, protein: 25, carbs: 1, fat: 0, color: "green", benefit: "High protein, low carb." },
+      { name: "Mixed nuts (5 pistachios, 5 almonds, 5 cashews, 5 walnuts)", calories: 200, protein: 5, carbs: 6, fat: 18, color: "green", benefit: "Good fats and protein." },
+      { name: "Avocado (1/2 medium)", calories: 120, protein: 1.5, carbs: 6, fat: 10, color: "green", benefit: "Healthy fats and fiber." }
+    ],
+    lunch: [
+      { name: "Salmon (6 oz)", calories: 367, protein: 39, carbs: 0, fat: 22, color: "green", benefit: "Omega-3 rich, filling." },
+      { name: "Chicken breast (6 oz)", calories: 276, protein: 52, carbs: 0, fat: 6, color: "green", benefit: "Lean protein." },
+      { name: "Mixed green salad (1 cup)", calories: 25, protein: 2, carbs: 4, fat: 0, color: "green", benefit: "Low calorie, fiber." },
+      { name: "Whey protein isolate (1 scoop)", calories: 110, protein: 25, carbs: 1, fat: 0, color: "green", benefit: "High protein, low carb." },
+      { name: "Avocado (1/2 medium)", calories: 120, protein: 1.5, carbs: 6, fat: 10, color: "green", benefit: "Healthy fats and fiber." },
+      { name: "Mixed nuts (5 pistachios, 5 almonds, 5 cashews, 5 walnuts)", calories: 200, protein: 5, carbs: 6, fat: 18, color: "green", benefit: "Good fats and protein." }
+    ],
+    snacks: [
+      { name: "Potato chips (1 bag)", calories: 150, protein: 2, carbs: 15, fat: 10, color: "red", warning: "Potato chips are not a good source of sodium and have unhealthy fats." },
+      { name: "Popcorn (1 bag)", calories: 120, protein: 2, carbs: 22, fat: 3, color: "red", warning: "Popcorn and potato chips lack sufficient electrolytes for rehydration." },
+      { name: "Gummy worms (1 pack)", calories: 150, protein: 0, carbs: 38, fat: 0, color: "red", warning: "Gummy worms give a sugar high but are not filling or nutritious." },
+      { name: "Candy bars (1 bar)", calories: 210, protein: 2, carbs: 30, fat: 10, color: "red", warning: "Candy bars provide quick sugar energy but no lasting fullness." }
+    ],
+    dinner: [
+      { name: "Salmon (6 oz)", calories: 367, protein: 39, carbs: 0, fat: 22, color: "green", benefit: "Omega-3 rich, filling." },
+      { name: "Chicken breast (6 oz)", calories: 276, protein: 52, carbs: 0, fat: 6, color: "green", benefit: "Lean protein." },
+      { name: "Mixed nuts (5 pistachios, 5 almonds, 5 cashews, 5 walnuts)", calories: 200, protein: 5, carbs: 6, fat: 18, color: "green", benefit: "Good fats and protein." },
+      { name: "Mixed green salad (1 cup)", calories: 25, protein: 2, carbs: 4, fat: 0, color: "green", benefit: "Low calorie, fiber." },
+      { name: "Avocado (1/2 medium)", calories: 120, protein: 1.5, carbs: 6, fat: 10, color: "green", benefit: "Healthy fats and fiber." }
+    ]
+  };
 
-// ---- Data setup ----
+  // State of selected food items by meal
+  const mealSelections = {
+    breakfast: new Set(),
+    lunch: new Set(),
+    snacks: new Set(),
+    dinner: new Set()
+  };
 
-const foods = {
-  breakfast: [
-    { id: "bananaBaby", name: "Banana Baby Food (1 container)", cals: 100, protein: 1, carbs: 25, fat: 0, color: "green",
-      benefit: "Potassium rich, good for electrolytes." },
-    { id: "peanutButter", name: "Peanut Butter (1 tsp, unsalted)", cals: 32, protein: 1.3, carbs: 1, fat: 2.8, color: "green",
-      benefit: "Good fats and protein." },
-    { id: "tofuHalf", name: "Tofu (102.5 g, 1/2 pack)", cals: 200, protein: 20, carbs: 3, fat: 12, color: "green",
-      benefit: "High protein, plant-based." },
-    { id: "yogurtPlain", name: "Plain Nonfat Yogurt (1 cup)", cals: 140, protein: 13, carbs: 17, fat: 0, color: "green",
-      benefit: "Probiotics and protein." },
-    { id: "wheyIsolate", name: "Whey Protein Isolate (1 scoop)", cals: 110, protein: 25, carbs: 0, fat: 0, color: "green",
-      benefit: "Fast-absorbing protein." },
-    { id: "mixedNutsSmall", name: "Mixed Nuts (5 pistachios, 5 almonds, 5 cashews, 5 walnuts)", cals: 150, protein: 5, carbs: 6, fat: 13, color: "green",
-      benefit: "Healthy fats and protein." },
-    { id: "avocadoHalf", name: "Avocado (half)", cals: 120, protein: 1.5, carbs: 6, fat: 10, color: "green",
-      benefit: "Healthy fats and fiber." }
-  ],
-  lunch: [
-    { id: "salmon6oz", name: "Salmon (6 oz)", cals: 367, protein: 39, carbs: 0, fat: 22, color: "green",
-      benefit: "Omega-3 fatty acids, filling protein." },
-    { id: "chicken6oz", name: "Chicken Breast (6 oz)", cals: 276, protein: 51, carbs: 0, fat: 6, color: "green",
-      benefit: "Lean protein." },
-    { id: "mixedGreenSalad", name: "Mixed Green Salad (1 cup)", cals: 15, protein: 1, carbs: 3, fat: 0, color: "green",
-      benefit: "Low calorie, fiber rich." },
-    { id: "wheyIsolate", name: "Whey Protein Isolate (1 scoop)", cals: 110, protein: 25, carbs: 0, fat: 0, color: "green",
-      benefit: "Fast-absorbing protein." },
-    { id: "avocadoHalf", name: "Avocado (half)", cals: 120, protein: 1.5, carbs: 6, fat: 10, color: "green",
-      benefit: "Healthy fats and fiber." },
-    { id: "mixedNutsSmall", name: "Mixed Nuts (5 pistachios, 5 almonds, 5 cashews, 5 walnuts)", cals: 150, protein: 5, carbs: 6, fat: 13, color: "green",
-      benefit: "Healthy fats and protein." }
-  ],
-  snacks: [
-    { id: "chips", name: "Potato Chips (1 bag)", cals: 150, protein: 2, carbs: 15, fat: 10, color: "red",
-      warning: "Not a good source of sodium if you're low on electrolytes." },
-    { id: "popcorn", name: "Popcorn (1 bag, buttered)", cals: 200, protein: 3, carbs: 22, fat: 12, color: "red",
-      warning: "Not a good source of sodium if you're low on electrolytes." },
-    { id: "gummyWorms", name: "Gummy Worms (1 bag)", cals: 190, protein: 0, carbs: 45, fat: 0, color: "red",
-      warning: "Sugar high, not filling." },
-    { id: "candyBar", name: "Candy Bar (1 bar)", cals: 250, protein: 2, carbs: 35, fat: 12, color: "red",
-      warning: "Sugar high, not filling." }
-  ],
-  dinner: [
-    { id: "salmon6oz", name: "Salmon (6 oz)", cals: 367, protein: 39, carbs: 0, fat: 22, color: "green",
-      benefit: "Omega-3 fatty acids, filling protein." },
-    { id: "chicken6oz", name: "Chicken Breast (6 oz)", cals: 276, protein: 51, carbs: 0, fat: 6, color: "green",
-      benefit: "Lean protein." },
-    { id: "mixedNutsSmall", name: "Mixed Nuts (5 pistachios, 5 almonds, 5 cashews, 5 walnuts)", cals: 150, protein: 5, carbs: 6, fat: 13, color: "green",
-      benefit: "Healthy fats and protein." },
-    { id: "mixedGreenSalad", name: "Mixed Green Salad (1 cup)", cals: 15, protein: 1, carbs: 3, fat: 0, color: "green",
-      benefit: "Low calorie, fiber rich." }
-  ]
-};
+  // Render meal buttons and selected foods
+  function renderMealSections() {
+    const container = document.getElementById("mealSections");
+    container.innerHTML = "";
 
-let selectedFoods = {
-  breakfast: new Set(),
-  lunch: new Set(),
-  snacks: new Set(),
-  dinner: new Set()
-};
+    ["breakfast", "lunch", "snacks", "dinner"].forEach(meal => {
+      const section = document.createElement("div");
+      section.innerHTML = `<h4>${meal.charAt(0).toUpperCase() + meal.slice(1)}</h4>`;
 
-let bladeCalories = 0;
-let weightLog = [];
-let pathCoords = [];
+      foods[meal].forEach((food, idx) => {
+        const btn = document.createElement("button");
+        btn.className = `food-button ${food.color}`;
+        btn.textContent = `${food.name} (${food.calories} kcal)`;
+        btn.title = food.benefit || food.warning || "";
+        btn.onclick = () => toggleFoodSelection(meal, idx, btn);
+        section.appendChild(btn);
+      });
 
-const electrolyteSupplements = {
-  LMNT: { sodium: 1000, potassium: 200, magnesium: 60, sugar: 0, warning: null },
-  SmartWater: { sodium: 10, potassium: 0, magnesium: 0, sugar: 0, warning: "Too low in electrolytes for heavy sweating." },
-  Gatorade: { sodium: 160, potassium: 45, magnesium: 0, sugar: 34, warning: "Contains sugars; not ideal unless heavy sweating." },
-  Propel: { sodium: 160, potassium: 0, magnesium: 0, sugar: 0, warning: "Low potassium; not ideal unless heavy sweating." },
-  Others: { sodium: 50, potassium: 10, magnesium: 10, sugar: 10, warning: "Check labels; some contain excessive sugars or additives." }
-};
+      // Selected foods log
+      const selectedDiv = document.createElement("div");
+      selectedDiv.id = `${meal}Selected`;
+      selectedDiv.style.marginTop = "10px";
+      section.appendChild(selectedDiv);
 
-// Helper: save/load state for localStorage persistence
-
-function saveState() {
-  localStorage.setItem("bladetrack_selectedFoods", JSON.stringify({
-    breakfast: Array.from(selectedFoods.breakfast),
-    lunch: Array.from(selectedFoods.lunch),
-    snacks: Array.from(selectedFoods.snacks),
-    dinner: Array.from(selectedFoods.dinner)
-  }));
-  localStorage.setItem("bladetrack_bladeCalories", bladeCalories);
-  localStorage.setItem("bladetrack_weightLog", JSON.stringify(weightLog));
-  localStorage.setItem("bladetrack_pathCoords", JSON.stringify(pathCoords.map(p => ({ lat: p.lat(), lng: p.lng() }))));
-  localStorage.setItem("bladetrack_pct", JSON.stringify({
-    breakfast: parseInt(document.getElementById("pctBreakfast").value) || 0,
-    lunch: parseInt(document.getElementById("pctLunch").value) || 0,
-    snacks: parseInt(document.getElementById("pctSnacks").value) || 0,
-    dinner: parseInt(document.getElementById("pctDinner").value) || 0
-  }));
-  localStorage.setItem("bladetrack_calorieGoal", parseInt(document.getElementById("calorieGoal").value) || 1500);
-}
-
-function loadState() {
-  try {
-    const foodsState = JSON.parse(localStorage.getItem("bladetrack_selectedFoods"));
-    if (foodsState) {
-      selectedFoods.breakfast = new Set(foodsState.breakfast || []);
-      selectedFoods.lunch = new Set(foodsState.lunch || []);
-      selectedFoods.snacks = new Set(foodsState.snacks || []);
-      selectedFoods.dinner = new Set(foodsState.dinner || []);
-    }
-    bladeCalories = parseFloat(localStorage.getItem("bladetrack_bladeCalories")) || 0;
-    weightLog = JSON.parse(localStorage.getItem("bladetrack_weightLog")) || [];
-    const coords = JSON.parse(localStorage.getItem("bladetrack_pathCoords")) || [];
-    pathCoords = coords.map(c => new google.maps.LatLng(c.lat, c.lng));
-    const pct = JSON.parse(localStorage.getItem("bladetrack_pct"));
-    if (pct) {
-      document.getElementById("pctBreakfast").value = pct.breakfast;
-      document.getElementById("pctLunch").value = pct.lunch;
-      document.getElementById("pctSnacks").value = pct.snacks;
-      document.getElementById("pctDinner").value = pct.dinner;
-    }
-    const cGoal = parseInt(localStorage.getItem("bladetrack_calorieGoal"));
-    if (cGoal) document.getElementById("calorieGoal").value = cGoal;
-  } catch(e) {
-    console.warn("Failed to load state:", e);
+      container.appendChild(section);
+    });
   }
-}
 
-// --- Render UI functions
-
-function createFoodButton(meal, food) {
-  const btn = document.createElement("button");
-  btn.textContent = `${food.name} (${food.cals} kcal)`;
-  btn.className = `food-button ${food.color}`;
-  if (selectedFoods[meal].has(food.id)) {
-    btn.classList.add("selected");
-  }
-  btn.onclick = () => {
-    if (selectedFoods[meal].has(food.id)) {
-      selectedFoods[meal].delete(food.id);
+  function toggleFoodSelection(meal, idx, button) {
+    if(mealSelections[meal].has(idx)){
+      mealSelections[meal].delete(idx);
+      button.classList.remove("selected");
     } else {
-      selectedFoods[meal].add(food.id);
+      mealSelections[meal].add(idx);
+      button.classList.add("selected");
     }
-    saveState();
-    renderMealLog(meal);
+    updateMealLog(meal);
+    updateTotals();
+  }
+
+  function updateMealLog(meal) {
+    const div = document.getElementById(meal + "Selected");
+    const selectedIndexes = Array.from(mealSelections[meal]);
+    if(selectedIndexes.length === 0){
+      div.textContent = "No items selected.";
+      return;
+    }
+    let totalCalories = 0, totalProtein=0, totalCarbs=0, totalFat=0;
+    const list = document.createElement("ul");
+    selectedIndexes.forEach(i => {
+      const food = foods[meal][i];
+      totalCalories += food.calories;
+      totalProtein += food.protein;
+      totalCarbs += food.carbs;
+      totalFat += food.fat;
+      const li = document.createElement("li");
+      li.textContent = `${food.name} - ${food.calories} kcal`;
+      list.appendChild(li);
+    });
+    div.innerHTML = "";
+    div.appendChild(list);
+    const macrosText = `Total: ${totalCalories} kcal | Protein: ${totalProtein}g | Carbs: ${totalCarbs}g | Fat: ${totalFat}g`;
+    div.appendChild(document.createElement("br"));
+    div.appendChild(document.createTextNode(macrosText));
+  }
+
+  // Rollerblading calories calculation (modest estimate: 25% of MET calculation)
+  let bladeCalories = 0;
+  function calculateBladeCalories() {
+    const weight = parseFloat(document.getElementById("weight").value) || 175;
+    const miles = parseFloat(document.getElementById("bladeMiles").value) || 0;
+    const start = document.getElementById("bladeStart").value;
+    const end = document.getElementById("bladeEnd").value;
+    let duration = 0;
+    if (start && end) {
+      const [sh, sm] = start.split(":");
+      const [eh, em] = end.split(":");
+      duration = ((parseInt(eh)*60+parseInt(em)) - (parseInt(sh)*60+parseInt(sm))) / 60;
+      if(duration < 0) duration = 0;
+    }
+    const met = 7.0;
+    const weightKg = weight * 0.453592;
+    const hours = duration || (miles / 9);
+    bladeCalories = met * weightKg * hours * 0.25;  // 25% of usual estimate
+    document.getElementById("bladeResult").innerText = `Estimated Calories Burned: ${Math.round(bladeCalories)} kcal over ${hours.toFixed(2)} hours.`;
+    updateTotals();
+  }
+
+  // Update day totals and macros, including adjusted calorie goals
+  function updateTotals() {
+    let dayCalories = 0, dayProtein = 0, dayCarbs = 0, dayFat = 0;
+    for(let meal in mealSelections){
+      mealSelections[meal].forEach(i => {
+        const f = foods[meal][i];
+        dayCalories += f.calories;
+        dayProtein += f.protein;
+        dayCarbs += f.carbs;
+        dayFat += f.fat;
+      });
+    }
+    const baseGoal = parseFloat(document.getElementById("calorieGoal").value) || 1500;
+    const adjustedGoal = Math.round(baseGoal + bladeCalories);
+    let netCalories = Math.round(dayCalories - bladeCalories);
+    if(netCalories < 0) netCalories = 0;
+
+    const totalMacros = dayProtein*4 + dayCarbs*4 + dayFat*9;
+    const proteinPct = totalMacros ? ((dayProtein*4)/totalMacros*100).toFixed(1) : 0;
+    const carbsPct = totalMacros ? ((dayCarbs*4)/totalMacros*100).toFixed(1) : 0;
+    const fatPct = totalMacros ? ((dayFat*9)/totalMacros*100).toFixed(1) : 0;
+
+    document.getElementById('day-totals').innerHTML = `
+      <div><strong>Adjusted Daily Calorie Goal (base + rollerblading):</strong> ${adjustedGoal} kcal</div>
+      <div><strong>Net Daily Calories (food - rollerblading):</strong> ${netCalories} kcal</div>
+      <div>Macros: Protein ${proteinPct}%, Carbs ${carbsPct}%, Fat ${fatPct}%</div>
+
+      <br>
+      <div><strong>Macro Benchmarks:</strong></div>
+      <table style="width:100%; font-size:14px; border-collapse: collapse;" border="1" cellpadding="5">
+        <thead>
+          <tr><th>Diet Type</th><th>Protein %</th><th>Carbs %</th><th>Fat %</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>High-Protein (fitness enthusiasts)</td><td>40%</td><td>40%</td><td>20%</td></tr>
+          <tr><td>High-Carb (many vegans)</td><td>15%</td><td>65%</td><td>20%</td></tr>
+          <tr><td>High-Fat (keto-style)</td><td>15%</td><td>10%</td><td>75%</td></tr>
+        </tbody>
+      </table>
+    `;
+  }
+
+  // Weight tracking and chart
+  let weightLog = [];
+  function logWeight() {
+    const weight = parseFloat(document.getElementById("dailyWeight").value);
+    if(isNaN(weight) || weight <= 0) {
+      alert("Please enter a valid weight.");
+      return;
+    }
+    const today = new Date().toISOString().split("T")[0];
+    const existing = weightLog.find(w => w.date === today);
+    if(existing) {
+      existing.weight = weight;
+    } else {
+      weightLog.push({date: today, weight});
+      weightLog.sort((a,b) => new Date(a.date) - new Date(b.date));
+    }
+    renderWeightLog();
+    renderWeightChart();
+  }
+
+  function renderWeightLog() {
+    const container = document.getElementById("weightLog");
+    container.innerHTML = "<strong>Date</strong> | <strong>Weight (lbs)</strong><br>";
+    weightLog.forEach(w => {
+      container.innerHTML += `${w.date} | ${w.weight}<br>`;
+    });
+  }
+
+  function renderWeightChart() {
+    const ctx = document.getElementById("weight-progress-chart").getContext("2d");
+    if(window.weightChart) window.weightChart.destroy();
+
+    window.weightChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: weightLog.map(w => w.date),
+        datasets: [{
+          label: "Weight (lbs)",
+          data: weightLog.map(w => w.weight),
+          borderColor: "blue",
+          fill: false,
+          tension: 0.1
+        }]
+      },
+      options: {
+        scales: {
+          x: { 
+            display: true,
+            title: { display: true, text: "Date" }
+          },
+          y: {
+            display: true,
+            title: { display: true, text: "Weight (lbs)" },
+            beginAtZero: false
+          }
+        }
+      }
+    });
+  }
+
+  // NYC weather and electrolyte guidance
+  const temperatureF = 89;
+  const humidity = 65;
+  document.getElementById("weather").innerText = `Union Square, NYC: ${temperatureF}°F — ${humidity}% humidity.`;
+  if (temperatureF > 86) {
+    document.getElementById("warning").innerText = 
+      "🔥 It's hot! Rehydrate with LMNT (contains sodium, potassium, magnesium) or potassium-rich foods (bananas, avocado). Avoid SmartWater—too low in electrolytes. " +
+      "Also avoid electrolyte supplements low in magnesium or with excessive additives.";
+  }
+
+  // Initialize on load
+  window.onload = () => {
+    renderMealSections();
     updateTotals();
   };
-  // Add tooltip with benefit or warning
-  btn.title = food.benefit ? `Benefit: ${food.benefit}` : (food.warning ? `Warning: ${food.warning}` : "");
-  return btn;
-}
-
-function renderFoodButtons() {
-  // Clear all first
-  ["breakfast", "lunch", "snacks", "dinner"].forEach(meal => {
-    const container = document.getElementById(`${meal}Foods`);
-    container.innerHTML = "";
-    foods[meal].forEach(food => {
-      container.appendChild(createFoodButton(meal, food));
-    });
-  });
-}
-
-function renderMealLog(meal) {
-  const logDiv = document.getElementById(`${meal}Log`);
-  if (selectedFoods[meal].size === 0) {
-    logDiv.textContent = "No items selected.";
-    document.getElementById(`${meal}Totals`).textContent = "";
-    return;
-  }
-  // Compose log with calories and macros summary
-  let totalCals = 0, totalP = 0, totalC = 0, totalF = 0;
-  let html = `<table><thead><tr><th>Food</th><th>Calories</th><th>Protein (g)</th><th>Carbs (g)</th><th>Fat (g)</th><th>Info</th></tr></thead><tbody>`;
-  selectedFoods[meal].forEach(id => {
-    const food = foods[meal].find(f => f.id === id) || foods.snacks.find(f => f.id === id) || foods.breakfast.find(f => f.id === id) || foods.lunch.find(f => f.id === id) || foods.dinner.find(f => f.id === id);
-    if (!food) return;
-    totalCals += food.cals;
-    totalP += food.protein;
-    totalC += food.carbs;
-    totalF += food.fat;
-    html += `<tr><td>${food.name}</td><td>${food.cals}</td><td>${food.protein}</td><td>${food.carbs}</td><td>${food.fat}</td><td>${food.benefit ? food.benefit : (food.warning ? food.warning : "")}</td></tr>`;
-  });
-  html += `</tbody></table>`;
-  logDiv.innerHTML = html;
-  // Update totals below log
-  document.getElementById(`${meal}Totals`).innerHTML =
-    `<strong>Meal Total:</strong> ${totalCals} kcal, Protein: ${totalP.toFixed(1)}g, Carbs: ${totalC.toFixed(1)}g, Fat: ${totalF.toFixed(1)}g`;
-}
-
-function validatePctTotal() {
-  const b = parseInt(document.getElementById("pctBreakfast").value) || 0;
-  const l = parseInt(document.getElementById("pctLunch").value) || 0;
-  const s = parseInt(document.getElementById("pctSnacks").value) || 0;
-  const d = parseInt(document.getElementById("pctDinner").value) || 0;
-  const total = b + l + s + d;
-  const errorSpan = document.getElementById("pctError");
-  if (total !== 100) {
-    errorSpan.textContent = `Total is ${total}%, must be exactly 100%.`;
-    return false;
-  } else {
-    errorSpan.textContent = "";
-    return true;
-  }
-}
-
-function updateMealTargets() {
-  if (!validatePctTotal()) {
-    // Clear targets if invalid
-    ["breakfast", "lunch", "snacks", "dinner"].forEach(m => {
-      document.getElementById(`${m}TargetCal`).textContent = "";
-    });
-    return;
-  }
-  const goal = parseInt(document.getElementById("calorieGoal").value) || 1500;
-  const b = parseInt(document.getElementById("pctBreakfast").value);
-  const l = parseInt(document.getElementById("pctLunch").value);
-  const s = parseInt(document.getElementById("pctSnacks").value);
-  const d = parseInt(document.getElementById("pctDinner").value);
-
-  document.getElementById("breakfastTargetCal").textContent = `(Target: ${Math.round(goal * b / 100)} kcal)`;
-  document.getElementById("lunchTargetCal").textContent = `(Target: ${Math.round(goal * l / 100)} kcal)`;
-  document.getElementById("snacksTargetCal").textContent = `(Target: ${Math.round(goal * s / 100)} kcal)`;
-  document.getElementById("dinnerTargetCal").textContent = `(Target: ${Math.round(goal * d / 100)} kcal)`;
-}
-
-function updateTotals() {
-  updateMealTargets();
-
-  // Calculate per meal totals and day totals
-  let dayCals = 0, dayP = 0, dayC = 0, dayF = 0;
-
-  ["breakfast", "lunch", "snacks", "dinner"].forEach(meal => {
-    let mealC = 0, mealP = 0, mealCbs = 0, mealF = 0;
-    selectedFoods[meal].forEach(id => {
-      const food = foods[meal].find(f => f.id === id) || foods.snacks.find(f => f.id === id) || foods.breakfast.find(f => f.id === id) || foods.lunch.find(f => f.id === id) || foods.dinner.find(f => f.id === id);
-      if (!food) return;
-      mealC += food.cals;
-      mealP += food.protein;
-      mealCbs += food.carbs;
-      mealF += food.fat;
-    });
-    dayCals += mealC;
-    dayP += mealP;
-    dayC += mealCbs;
-    dayF += mealF;
-    // Update progress bars for meal calorie compliance:
-    if (validatePctTotal()) {
-      const goal = parseInt(document.getElementById("calorieGoal").value) || 1500;
-      const pct = parseInt(document.getElementById(`pct${capitalize(meal)}`).value);
-      const targetCal = goal * pct / 100;
-      const percentOfTarget = Math.min(100, (mealC / targetCal) * 100);
-      const progressDivId = `${meal}Totals`;
-      const progressDiv = document.getElementById(progressDivId);
-      let colorClass = "progress-green";
-      if (percentOfTarget > 110) colorClass = "progress-red";
-      else if (percentOfTarget > 90) colorClass = "progress-orange";
-
-      progressDiv.innerHTML = `
-        <strong>Meal Total:</strong> ${mealC} kcal, Protein: ${mealP.toFixed(1)}g, Carbs: ${mealCbs.toFixed(1)}g, Fat: ${mealF.toFixed(1)}g
-        <div class="progress-bar"><div class="progress-fill ${colorClass}" style="width:${percentOfTarget}%"></div></div>
-      `;
-    }
-  });
-
-  // Subtract rollerblading calories burned from daily total calories
-  const baseGoal = parseInt(document.getElementById("calorieGoal").value) || 1500;
-  const adjustedGoal = Math.max(0, baseGoal - bladeCalories);
-
-  // Day totals display
-  const dayTotalsDiv = document.getElementById("dayTotals");
-  dayTotalsDiv.innerHTML =
-    `<strong>Calories Consumed:</strong> ${dayCals} kcal<br>` +
-    `<strong>Calories Burned (Rollerblading):</strong> ${Math.round(bladeCalories)} kcal<br>` +
-    `<strong>Adjusted Daily Calorie Goal:</strong> ${Math.round(adjustedGoal)} kcal<br>` +
-    `<br><strong>Macros Total:</strong> Protein: ${dayP.toFixed(1)}g, Carbs: ${dayC.toFixed(1)}g, Fat: ${dayF.toFixed(1)}g`;
-
-  dayTotalsDiv.style.color = dayCals > adjustedGoal ? "red" : "green";
-
-  saveState();
-}
-
-// Rollerblading calories calc
-function calculateBladeCalories() {
-  const weight = parseFloat(document.getElementById("weight").value) || 175;
-  const miles = parseFloat(document.getElementById("bladeMiles").value) || 0;
-  const start = document.getElementById("bladeStart").value;
-  const end = document.getElementById("bladeEnd").value;
-  let duration = 0;
-  if (start && end) {
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    duration = (eh * 60 + em - (sh * 60 + sm)) / 60;
-    if (duration < 0) duration = 0;
-  }
-  const met = 7.0 / 4; // Quarter intensity to be modest
-  const weightKg = weight * 0.453592;
-  const hours = duration || (miles / 9) || 0;
-  bladeCalories = met * weightKg * hours;
-  document.getElementById("bladeResult").innerText =
-    `Estimated Calories Burned: ${Math.round(bladeCalories)} kcal over ${hours.toFixed(2)} hours.`;
-  updateTotals();
-}
-
-// Weight log/chart
-let weightChart, weightCtx;
-function setupWeightChart() {
-  weightCtx = document.getElementById("weight-progress-chart").getContext("2d");
-  weightChart = new Chart(weightCtx, {
-    type: "line",
-    data: { labels: [], datasets: [{ label: "Weight (lbs)", data: [], borderColor: "blue", fill: false }] },
-    options: { responsive: true, scales: { y: { beginAtZero: false } } }
-  });
-}
-
-function logWeight() {
-  const weightInput = parseFloat(document.getElementById("dailyWeight").value);
-  if (!weightInput || weightInput < 80 || weightInput > 500) {
-    alert("Please enter a valid weight between 80 and 500 lbs.");
-    return;
-  }
-  const today = new Date().toLocaleDateString();
-  weightLog.push({ date: today, weight: weightInput });
-  saveState();
-  updateWeightLog();
-  updateWeightChart();
-}
-
-function updateWeightLog() {
-  const weightLogDiv = document.getElementById("weightLog");
-  weightLogDiv.innerHTML = "<strong>Weight Log:</strong><br>";
-  weightLog.forEach(entry => {
-    weightLogDiv.innerHTML += `${entry.date}: ${entry.weight} lbs<br>`;
-  });
-}
-
-function updateWeightChart() {
-  weightChart.data.labels = weightLog.map(e => e.date);
-  weightChart.data.datasets[0].data = weightLog.map(e => e.weight);
-  weightChart.update();
-}
-
-// Map
-let map, polyline;
-function initMap() {
-  const center = { lat: 40.730610, lng: -73.935242 };
-  map = new google.maps.Map(document.getElementById("map"), { zoom: 12, center });
-  polyline = new google.maps.Polyline({
-    path: pathCoords,
-    geodesic: true,
-    strokeColor: "#FF0000",
-    strokeOpacity: 1.0,
-    strokeWeight: 2,
-    map
-  });
-  map.addListener("click", e => {
-    pathCoords.push(e.latLng);
-    polyline.setPath(pathCoords);
-    saveState();
-  });
-}
-
-function undoLastPoint() {
-  if (pathCoords.length > 0) {
-    pathCoords.pop();
-    polyline.setPath(pathCoords);
-    saveState();
-  }
-}
-
-function resetPath() {
-  pathCoords = [];
-  polyline.setPath(pathCoords);
-  saveState();
-}
-
-// Electrolyte advice dynamic build
-function updateElectrolyteAdvice() {
-  const temperatureF = 89; // hardcoded NYC - ideally dynamic
-  const adviceDiv = document.getElementById("electrolyteAdvice");
-  if (temperatureF <= 86) {
-    adviceDiv.innerHTML = "";
-    return;
-  }
-  let adviceHTML = `<strong>Hot Weather Electrolyte Advice:</strong><br>`;
-  adviceHTML += `🔥 It's hot! Prioritize rehydration with high-quality electrolytes:<br><ul>`;
-  Object.entries(electrolyteSupplements).forEach(([name, supp]) => {
-    adviceHTML += `<li><b>${name}:</b> Sodium ${supp.sodium}mg, Potassium ${supp.potassium}mg, Magnesium ${supp.magnesium}mg, Sugar ${supp.sugar}g`;
-    if (supp.warning) adviceHTML += ` — <i>${supp.warning}</i>`;
-    adviceHTML += `</li>`;
-  });
-  adviceHTML += `</ul>Eat potassium-rich foods like bananas and avocados as well. Avoid low-quality electrolyte products with excess sugar or additives.`;
-  adviceDiv.innerHTML = adviceHTML;
-}
-
-// Utility
-function capitalize(str) {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// Events for calorie % inputs and calorie goal to trigger updates
-["pctBreakfast", "pctLunch", "pctSnacks", "pctDinner", "calorieGoal"].forEach(id => {
-  document.getElementById(id).addEventListener("input", () => {
-    updateTotals();
-    saveState();
-  });
-});
-
-// Weight and rollerblade inputs also save state on change
-["weight", "bladeStart", "bladeEnd", "bladeMiles"].forEach(id => {
-  document.getElementById(id).addEventListener("change", saveState);
-});
-
-// Load state on startup
-window.onload = () => {
-  loadState();
-  renderFoodButtons();
-  ["breakfast", "lunch", "snacks", "dinner"].forEach(meal => renderMealLog(meal));
-  setupWeightChart();
-  updateWeightLog();
-  updateWeightChart();
-  updateTotals();
-  updateElectrolyteAdvice();
-};
-
 </script>
 
 </body>
