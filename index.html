@@ -1,158 +1,367 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>BladeTrack Web</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BladeTrack Daily Rollerblading Tracker</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
-    button, input, label { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; }
-    .hot-warning { color: orange; font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
-    th { background-color: #f9f9f9; }
-    .checkboxes { margin: 10px 0; }
-    .checkboxes label { display: block; font-size: 16px; }
-    .small-btn { background: #eee; border: none; padding: 8px 12px; font-size: 14px; cursor: pointer; margin-top: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    label, button {
+      display: block;
+      margin: 10px 0 5px;
+      font-size: 16px;
+    }
+    input[type="number"], select {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #1976d2;
+      color: white;
+      border: none;
+      padding: 12px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+    #warning {
+      color: #d9534f;
+      font-weight: bold;
+      margin: 15px 0;
+      text-align: center;
+    }
+    .checkbox-group label {
+      font-weight: normal;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 25px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    #electrolyte-info {
+      margin-top: 30px;
+      font-size: 14px;
+    }
+    #electrolyte-info table {
+      font-size: 13px;
+    }
+    #electrolyte-advice {
+      margin-top: 15px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-left: 5px solid #1976d2;
+      font-weight: bold;
+      white-space: pre-line;
+    }
   </style>
 </head>
 <body>
 
-  <h1>BladeTrack</h1>
+  <h1>BladeTrack Daily Rollerblading Tracker</h1>
 
   <label for="weight">Your weight (lbs):</label>
-  <input type="number" id="weight" placeholder="e.g. 154" />
+  <input type="number" id="weight" placeholder="e.g., 160" min="50" max="700" />
 
-  <p id="weather">Weather data: Union Square, NYC</p>
+  <label for="temperature">Today's temperature (°F):</label>
+  <input type="number" id="temperature" value="89.6" min="-20" max="130" />
 
-  <button onclick="startSession()">Start Rollerblading</button>
-  <button onclick="stopSession()" id="stopBtn" disabled>Stop</button>
+  <label for="humidity">Today's humidity (%):</label>
+  <input type="number" id="humidity" value="70" min="0" max="100" />
 
-  <p id="result"></p>
-  <p id="warning" class="hot-warning"></p>
+  <label for="activity">Today's activity:</label>
+  <select id="activity">
+    <option value="blade">Rollerblading</option>
+    <option value="rest">Rest / No Blading</option>
+  </select>
 
-  <div class="checkboxes" id="checklist" style="display:none;">
-    <p>✅ After Skating:</p>
-    <label><input type="checkbox" id="drankWater"> Drank water</label>
-    <label><input type="checkbox" id="ateBanana"> Ate a banana (potassium)</label>
-    <label><input type="checkbox" id="ateSaltyFood"> Ate salty food (sodium)</label>
-    <button class="small-btn" onclick="saveChecklist()">Save Recovery Checklist</button>
+  <div id="bladeInputs">
+    <label for="duration">Rollerblading duration (minutes):</label>
+    <input type="number" id="duration" placeholder="e.g., 45" min="1" max="300" />
   </div>
 
-  <div id="log"></div>
-  <button class="small-btn" onclick="clearLog()">🗑️ Clear All Sessions</button>
+  <button id="logBtn" onclick="logDay()">Log Today</button>
 
-  <script>
-    const MET_ROLLERBLADING = 7.0;
-    let startTime = null;
+  <p id="calorieResult" style="white-space: pre-line; font-weight: bold; margin-top: 15px;"></p>
+  <p id="warning"></p>
 
-    // Hardcoded Union Square summer conditions
-    const temperatureF = 89.6; // °F
-    const temperatureC = (temperatureF - 32) * 5 / 9;
-    const humidity = 70;
+  <div id="recoveryChecklist" style="display:none;">
+    <h2>Recovery Checklist</h2>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="chkWater" /> Drank enough water (at least 64 oz)</label>
+      <label><input type="checkbox" id="chkPotassium" /> Ate potassium-rich foods (banana, avocado, spinach)</label>
+      <label><input type="checkbox" id="chkSodium" /> Consumed salty foods or broth</label>
+      <label><input type="checkbox" id="chkMagnesium" /> Ate magnesium-rich foods (nuts, seeds)</label>
+      <label><input type="checkbox" id="chkElectrolyteDrink" /> Had electrolyte drink (optional)</label>
+      <label><input type="checkbox" id="chkLMNT" /> Took LMNT or similar electrolyte product</label>
+    </div>
+    <button onclick="saveRecovery()">Save Recovery Info</button>
 
-    document.getElementById("weather").innerText = `Union Square: ${temperatureF}°F — ${humidity}% humidity`;
+    <div id="electrolyte-info">
+      <h3>Electrolyte Comparison (per serving)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Source</th><th>Serving Size</th><th>Sodium (mg)</th><th>Potassium (mg)</th><th>Magnesium (mg)</th><th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>LMNT Electrolyte Mix</td><td>1 packet</td><td>1000</td><td>200</td><td>60</td><td>High sodium, designed for heavy sweat loss</td></tr>
+          <tr><td>Banana</td><td>1 medium</td><td>1</td><td>422</td><td>32</td><td>High potassium, low sodium</td></tr>
+          <tr><td>Smart Water</td><td>591 mL bottle</td><td>110</td><td>0</td><td>0</td><td>Low electrolytes except sodium</td></tr>
+          <tr><td>Avocado</td><td>1/2 medium</td><td>7</td><td>487</td><td>29</td><td>High potassium, low sodium</td></tr>
+          <tr><td>Broth (Chicken)</td><td>1 cup</td><td>700-900</td><td>800+</td><td>10-20</td><td>High sodium and potassium</td></tr>
+          <tr><td>Almonds</td><td>1 oz</td><td>0</td><td>200</td><td>80</td><td>Good magnesium and potassium</td></tr>
+        </tbody>
+      </table>
 
-    if (temperatureF > 86) {
-      document.getElementById("warning").innerText = "🔥 It's hot! Drink water and eat potassium-rich foods like bananas.";
+      <div id="electrolyte-advice"></div>
+    </div>
+  </div>
+
+  <h2>Daily Log</h2>
+  <table id="logTable">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Activity</th>
+        <th>Duration (min)</th>
+        <th>Calories Burned</th>
+        <th>Temp (°F)</th>
+        <th>Hydrated</th>
+        <th>Potassium</th>
+        <th>Sodium</th>
+        <th>Magnesium</th>
+        <th>Electrolyte Drink</th>
+        <th>LMNT</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <button onclick="clearLog()" style="margin-top:20px; background:#d9534f; color: white;">Clear Log</button>
+
+<script>
+  const MET_ROLLERBLADING = 7.0;
+
+  const weightInput = document.getElementById('weight');
+  const tempInput = document.getElementById('temperature');
+  const humidityInput = document.getElementById('humidity');
+  const activitySelect = document.getElementById('activity');
+  const durationInput = document.getElementById('duration');
+  const bladeInputsDiv = document.getElementById('bladeInputs');
+  const calorieResult = document.getElementById('calorieResult');
+  const warning = document.getElementById('warning');
+  const recoveryChecklist = document.getElementById('recoveryChecklist');
+  const electrolyteAdviceDiv = document.getElementById('electrolyte-advice');
+
+  const chkWater = document.getElementById('chkWater');
+  const chkPotassium = document.getElementById('chkPotassium');
+  const chkSodium = document.getElementById('chkSodium');
+  const chkMagnesium = document.getElementById('chkMagnesium');
+  const chkElectrolyteDrink = document.getElementById('chkElectrolyteDrink');
+  const chkLMNT = document.getElementById('chkLMNT');
+
+  activitySelect.addEventListener('change', () => {
+    if(activitySelect.value === 'blade') {
+      bladeInputsDiv.style.display = 'block';
+    } else {
+      bladeInputsDiv.style.display = 'none';
+      durationInput.value = '';
+      calorieResult.textContent = '';
+      warning.textContent = '';
+      recoveryChecklist.style.display = 'none';
+      electrolyteAdviceDiv.textContent = '';
+    }
+  });
+
+  function calcCalories(weightLbs, durationMin, tempF) {
+    const weightKg = weightLbs * 0.453592;
+    const tempMod = tempF > 86 ? 1.15 : 1;
+    return MET_ROLLERBLADING * weightKg * (durationMin / 60) * tempMod;
+  }
+
+  function generateElectrolyteAdvice(tempF, activity, duration) {
+    let advice = '';
+    if (tempF > 86 || (activity === 'blade' && duration >= 45)) {
+      advice = "🔥 It’s hot or you bladed a long session.\n" +
+               "Consider LMNT or broth for sodium replacement.\n" +
+               "Also eat potassium-rich foods like bananas or avocado.\n" +
+               "Don’t forget magnesium sources like nuts for recovery.\n" +
+               "Drink plenty of water but don't overhydrate without electrolytes.";
+    } else if (activity === 'blade') {
+      advice = "You bladed but conditions are moderate.\n" +
+               "Focus on natural potassium sources (bananas, avocado) and stay hydrated.\n" +
+               "Magnesium-rich nuts and seeds aid muscle recovery.";
+    } else {
+      advice = "Rest day logged.\n" +
+               "Maintain hydration and balanced diet with natural electrolyte foods.\n" +
+               "Consider light salty snacks or broth if you sweat a lot indoors or in heat.";
+    }
+    return advice;
+  }
+
+  function logDay() {
+    const weight = parseFloat(weightInput.value);
+    const temp = parseFloat(tempInput.value);
+    const humidity = parseFloat(humidityInput.value);
+    const activity = activitySelect.value;
+    const duration = parseFloat(durationInput.value);
+
+    if (!weight || weight < 50 || weight > 700) {
+      alert('Enter a valid weight between 50 and 700 lbs.');
+      return;
+    }
+    if (!temp || temp < -20 || temp > 130) {
+      alert('Enter a valid temperature between -20°F and 130°F.');
+      return;
+    }
+    if (!humidity || humidity < 0 || humidity > 100) {
+      alert('Enter valid humidity between 0% and 100%.');
+      return;
     }
 
-    function startSession() {
-      const weightInput = document.getElementById("weight").value;
-      if (!weightInput || isNaN(weightInput) || weightInput <= 0) {
-        alert("Please enter your weight in pounds.");
+    let caloriesBurned = 0;
+    let message = '';
+    if (activity === 'blade') {
+      if (!duration || duration < 1 || duration > 300) {
+        alert('Enter a valid rollerblading duration (1 to 300 minutes).');
         return;
       }
-
-      startTime = Date.now();
-      document.getElementById("result").innerText = "";
-      document.getElementById("stopBtn").disabled = false;
-      document.getElementById("checklist").style.display = "none";
+      caloriesBurned = calcCalories(weight, duration, temp);
+      message += `You bladed for ${duration.toFixed(1)} minutes.\nCalories burned: ${caloriesBurned.toFixed(0)} kcal.\n`;
+    } else {
+      message += 'Rest day logged. No calories burned from blading.\n';
     }
 
-    function stopSession() {
-      if (!startTime) return;
+    calorieResult.textContent = message;
+    warning.textContent = '';
 
-      const weightLbs = parseFloat(document.getElementById("weight").value);
-      const weightKg = weightLbs * 0.453592; // convert to kg
+    // Show recovery checklist for both blade and rest days
+    recoveryChecklist.style.display = 'block';
 
-      const durationMin = (Date.now() - startTime) / 60000;
-      const tempMod = temperatureF > 86 ? 1.15 : 1;
-      const kcal = MET_ROLLERBLADING * weightKg * (durationMin / 60) * tempMod;
+    // Show smart electrolyte advice below checklist
+    electrolyteAdviceDiv.textContent = generateElectrolyteAdvice(temp, activity, duration || 0);
 
-      const date = new Date().toLocaleString();
-      const entry = {
-        date,
-        duration: durationMin.toFixed(1),
-        calories: Math.round(kcal),
-        temperature: temperatureF,
-        water: false,
-        banana: false,
-        salty: false
-      };
+    // Save daily entry to localStorage for recovery update
+    const today = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+    const dailyEntry = {
+      date: today,
+      weight: weight,
+      temp: temp,
+      humidity: humidity,
+      activity: activity,
+      duration: activity === 'blade' ? duration : 0,
+      caloriesBurned: caloriesBurned,
+      hydrated: false,
+      potassium: false,
+      sodium: false,
+      magnesium: false,
+      electrolyteDrink: false,
+      lmnt: false
+    };
+    localStorage.setItem('bladeTrackToday', JSON.stringify(dailyEntry));
+  }
 
-      localStorage.setItem("current_session", JSON.stringify(entry));
-      document.getElementById("checklist").style.display = "block";
+  function saveRecovery() {
+    let dailyEntry = JSON.parse(localStorage.getItem('bladeTrackToday'));
+    if (!dailyEntry) return alert('Please log today first.');
 
-      document.getElementById("result").innerText =
-        `Duration: ${entry.duration} minutes\nCalories burned: ${entry.calories}`;
+    dailyEntry.hydrated = chkWater.checked;
+    dailyEntry.potassium = chkPotassium.checked;
+    dailyEntry.sodium = chkSodium.checked;
+    dailyEntry.magnesium = chkMagnesium.checked;
+    dailyEntry.electrolyteDrink = chkElectrolyteDrink.checked;
+    dailyEntry.lmnt = chkLMNT.checked;
+
+    // Load existing log or create
+    let log = JSON.parse(localStorage.getItem('bladeTrackLog') || '[]');
+
+    // Remove old entry for today if exists
+    log = log.filter(entry => entry.date !== dailyEntry.date);
+    log.unshift(dailyEntry); // add newest first
+
+    localStorage.setItem('bladeTrackLog', JSON.stringify(log));
+
+    // Reset UI
+    recoveryChecklist.style.display = 'none';
+    calorieResult.textContent = '';
+    warning.textContent = '';
+    electrolyteAdviceDiv.textContent = '';
+    chkWater.checked = false;
+    chkPotassium.checked = false;
+    chkSodium.checked = false;
+    chkMagnesium.checked = false;
+    chkElectrolyteDrink.checked = false;
+    chkLMNT.checked = false;
+
+    displayLog();
+    alert('Day logged!');
+  }
+
+  function displayLog() {
+    const log = JSON.parse(localStorage.getItem('bladeTrackLog') || '[]');
+    const tbody = document.querySelector('#logTable tbody');
+    tbody.innerHTML = '';
+
+    if (log.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="11">No logged days yet.</td></tr>`;
+      return;
     }
 
-    function saveChecklist() {
-      let entry = JSON.parse(localStorage.getItem("current_session"));
-      if (!entry) return;
-
-      entry.water = document.getElementById("drankWater").checked;
-      entry.banana = document.getElementById("ateBanana").checked;
-      entry.salty = document.getElementById("ateSaltyFood").checked;
-
-      let log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
-      log.unshift(entry);
-      localStorage.setItem("blade_sessions", JSON.stringify(log));
-      localStorage.removeItem("current_session");
-
-      displaySessionLog();
-      document.getElementById("checklist").style.display = "none";
-      document.getElementById("drankWater").checked = false;
-      document.getElementById("ateBanana").checked = false;
-      document.getElementById("ateSaltyFood").checked = false;
-    }
-
-    function displaySessionLog() {
-      const log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
-
-      if (log.length === 0) {
-        document.getElementById("log").innerHTML = "<p>No past sessions yet.</p>";
-        return;
-      }
-
-      let html = "<h2>Session Log</h2><table><tr><th>Date</th><th>Min</th><th>kcal</th><th>Temp (°F)</th><th>✔️ Water</th><th>🍌</th><th>🧂</th></tr>";
-
-      log.forEach(entry => {
-        html += `<tr>
+    log.forEach(entry => {
+      tbody.innerHTML += `
+        <tr>
           <td>${entry.date}</td>
-          <td>${entry.duration}</td>
-          <td>${entry.calories}</td>
-          <td>${entry.temperature}</td>
-          <td>${entry.water ? "✔️" : ""}</td>
-          <td>${entry.banana ? "🍌" : ""}</td>
-          <td>${entry.salty ? "🧂" : ""}</td>
-        </tr>`;
-      });
+          <td>${entry.activity === 'blade' ? 'Rollerblading' : 'Rest'}</td>
+          <td>${entry.duration || '-'}</td>
+          <td>${entry.caloriesBurned ? entry.caloriesBurned.toFixed(0) : '-'}</td>
+          <td>${entry.temp}</td>
+          <td>${entry.hydrated ? '✔️' : ''}</td>
+          <td>${entry.potassium ? '🍌' : ''}</td>
+          <td>${entry.sodium ? '🧂' : ''}</td>
+          <td>${entry.magnesium ? '🥜' : ''}</td>
+          <td>${entry.electrolyteDrink ? '🥤' : ''}</td>
+          <td>${entry.lmnt ? '⚡️' : ''}</td>
+        </tr>
+      `;
+    });
+  }
 
-      html += "</table>";
-      document.getElementById("log").innerHTML = html;
+  function clearLog() {
+    if (confirm('Are you sure you want to clear all logs?')) {
+      localStorage.removeItem('bladeTrackLog');
+      displayLog();
     }
+  }
 
-    function clearLog() {
-      if (confirm("Are you sure you want to delete all sessions?")) {
-        localStorage.removeItem("blade_sessions");
-        localStorage.removeItem("current_session");
-        displaySessionLog();
-      }
-    }
+  // Initialize UI
+  displayLog();
+  bladeInputsDiv.style.display = activitySelect.value === 'blade' ? 'block' : 'none';
 
-    displaySessionLog();
-  </script>
+</script>
 
 </body>
 </html>
