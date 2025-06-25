@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BladeTrack Web App v1.37</title>
-<style>
-  /* ...existing styles here... */
-  label.meal-calorie-percent {
-    display: inline-block;
-    margin-right: 15px;
-    font-size: 14px;
-  }
-  input.meal-percent-input {
-    width: 60px;
-    font-size: 14px;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BladeTrack Web App v1.35</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
+    .hot-warning { color: orange; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
+    th { background-color: #f9f9f9; }
+    #map { height: 300px; margin: 20px 0; }
+    .food-button { display: block; width: 100%; margin: 5px 0; padding: 10px; font-size: 14px; border-radius: 5px; border: none; text-align: left; cursor: pointer; }
+    .green { background-color: #e0f7e9; border-left: 5px solid green; }
+    .yellow { background-color: #fff9e6; border-left: 5px solid orange; }
+    .red { background-color: #fdecea; border-left: 5px solid red; }
+    h3, h4 { font-weight: normal; }
+  </style>
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.37</h2>
+<h2>BladeTrack Web App v1.35</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
-<p>Height: <input type="number" id="heightFt" value="5" style="width:50px;"> ft <input type="number" id="heightIn" value="10" style="width:50px;"> in</p>
+<p>Height: <input type="number" id="heightFt" value="5"> ft <input type="number" id="heightIn" value="10"> in</p>
 <p>Gender:
   <select id="gender">
     <option value="male">Male</option>
@@ -31,233 +33,319 @@
     <option value="nonbinary">Nonbinary</option>
   </select>
 </p>
-<p>Daily Calorie Goal (kcal): <input type="number" id="calorieGoal" value="1500" oninput="updateTargetCalories()"></p>
+<p>Daily Calorie Goal (kcal): <input type="number" id="calorieGoal" value="1500"></p>
 <p>Weight Loss Goal (lbs per week): <input type="number" id="weeklyLossGoal" value="2"></p>
 
-<h4>Desired Calorie % per Meal (total should ideally be 100%)</h4>
-<label class="meal-calorie-percent">
-  Breakfast: <input class="meal-percent-input" type="number" id="breakfastPercent" value="25" min="0" max="100" oninput="updateTargetCalories()">%
-</label>
-<label class="meal-calorie-percent">
-  Lunch: <input class="meal-percent-input" type="number" id="lunchPercent" value="35" min="0" max="100" oninput="updateTargetCalories()">%
-</label>
-<label class="meal-calorie-percent">
-  Dinner: <input class="meal-percent-input" type="number" id="dinnerPercent" value="40" min="0" max="100" oninput="updateTargetCalories()">%
-</label>
-
+<h3>Meal Tracking</h3>
 <div id="mealLog"></div>
 
-<h4>Snacks (Unhealthy Choices)</h4>
+<h3>Snacks (Unhealthy Choices)</h3>
 <div id="snacks"></div>
 
-<h4>Dinner</h4>
-<div id="dinnerSelected"></div>
+<h3>Dinner</h3>
+<div id="dinner"></div>
 
-<!-- Rollerblading session tracker, weight tracking, map, etc. here as before -->
+<h3>Rollerblading Session Tracker</h3>
+<button id="startBtn" onclick="startSession()">Start Session</button>
+<button id="stopBtn" onclick="stopSession()" disabled>Stop Session</button>
+<div id="weather"></div>
+<div id="warning" class="hot-warning"></div>
+<div class="checkboxes" id="checklist" style="display:none;">
+  <label><input type="checkbox" id="drankWater"> Drank water</label>
+  <label><input type="checkbox" id="ateBanana"> Ate banana</label>
+  <label><input type="checkbox" id="ateSaltyFood"> Ate salty food</label>
+  <button onclick="saveChecklist()">✔️ Save Session</button>
+</div>
+<div id="result"></div>
+<div id="map"></div>
 
-<div id="dailyTotals"></div>
+<h3>Weight Tracking & Progress</h3>
+<p>Log Today's Weight (lbs): <input type="number" id="dailyWeight"><button onclick="logWeight()">Log Weight</button></p>
+<canvas id="weight-progress-chart" width="600" height="200"></canvas>
+<div id="weightLog"></div>
 
+<h3>Food Log Summary</h3>
+<div id="foodLog"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // Extend foodData with avocado and mixed green salad
-  const foodData = [
-    { name: "Banana Baby Food (1 container)", meal: "Breakfast", color: "green", calories: 100, protein: 1, carbs: 25, fat: 0 },
-    { name: "Plain Nonfat Yogurt (1 cup)", meal: "Breakfast", color: "green", calories: 90, protein: 10, carbs: 12, fat: 0 },
-    { name: "Tofu (102.5g, 1/2 pack)", meal: "Breakfast", color: "green", calories: 200, protein: 20, carbs: 4, fat: 11 },
-    { name: "Whey Protein Isolate (1 scoop)", meal: "Breakfast", color: "green", calories: 110, protein: 25, carbs: 1, fat: 0 },
-    { name: "Peanut Butter (1 tsp)", meal: "Breakfast", color: "green", calories: 32, protein: 1, carbs: 1, fat: 3 },
-    { name: "Avocado (1 medium)", meal: "Breakfast", color: "green", calories: 234, protein: 3, carbs: 12, fat: 21 },
+  // Food data with calories, macros (protein, carbs, fat in grams)
+  const foods = [
+    // Breakfast
+    { name: "Banana Baby Food (1 container)", meal: "Breakfast", calories: 100, protein: 1, carbs: 25, fat: 0, color: "green", notes:"Easy on digestion." },
+    { name: "Plain Nonfat Yogurt (1 cup)", meal: "Breakfast", calories: 150, protein: 13, carbs: 17, fat: 0, color: "green", notes:"Low fat, protein boost." },
+    { name: "Tofu (102.5g, 1/2 pack)", meal: "Breakfast", calories: 200, protein: 20, carbs: 3, fat: 12, color: "green", notes:"Plant protein." },
+    { name: "Whey Protein Isolate (1 scoop)", meal: "Breakfast", calories: 110, protein: 25, carbs: 1, fat: 0, color: "green", notes:"High protein, fast absorption." },
+    { name: "Peanut Butter (1 tsp)", meal: "Breakfast", calories: 32, protein: 1, carbs: 1, fat: 3, color: "green", notes:"Healthy fats in moderation." },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", meal: "Breakfast", calories: 200, protein: 5, carbs: 7, fat: 18, color: "green", notes:"Fiber, healthy fats." },
+    { name: "Avocado (1/2 medium)", meal: "Breakfast", calories: 120, protein: 1, carbs: 6, fat: 11, color: "green", notes:"Healthy fats and fiber." },
 
-    { name: "Whey Protein Isolate (1 scoop)", meal: "Lunch", color: "green", calories: 110, protein: 25, carbs: 1, fat: 0 },
-    { name: "Salmon (6 oz)", meal: "Lunch", color: "green", calories: 367, protein: 39, carbs: 0, fat: 22 },
-    { name: "Chicken Breast (4 oz)", meal: "Lunch", color: "green", calories: 187, protein: 35, carbs: 0, fat: 4 },
-    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", meal: "Lunch", color: "green", calories: 300, protein: 10, carbs: 10, fat: 27 },
-    { name: "Avocado (1 medium)", meal: "Lunch", color: "green", calories: 234, protein: 3, carbs: 12, fat: 21 },
-    { name: "Mixed Green Salad (1 cup)", meal: "Lunch", color: "green", calories: 25, protein: 2, carbs: 5, fat: 0 },
+    // Lunch
+    { name: "Salmon (6 oz)", meal: "Lunch", calories: 367, protein: 39, carbs: 0, fat: 22, color: "green", notes:"Omega-3s and satiety." },
+    { name: "Chicken Breast (4 oz)", meal: "Lunch", calories: 187, protein: 35, carbs: 0, fat: 4, color: "green", notes:"Lean protein." },
+    { name: "Whey Protein Isolate (1 scoop)", meal: "Lunch", calories: 110, protein: 25, carbs: 1, fat: 0, color: "green", notes:"High protein, fast absorption." },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", meal: "Lunch", calories: 200, protein: 5, carbs: 7, fat: 18, color: "green", notes:"Fiber, healthy fats." },
+    { name: "Avocado (1/2 medium)", meal: "Lunch", calories: 120, protein: 1, carbs: 6, fat: 11, color: "green", notes:"Healthy fats and fiber." },
+    { name: "Mixed Green Salad (1 cup)", meal: "Lunch", calories: 25, protein: 2, carbs: 4, fat: 0, color: "green", notes:"Low calorie, fiber." },
 
-    { name: "Salmon (6 oz)", meal: "Dinner", color: "green", calories: 367, protein: 39, carbs: 0, fat: 22 },
-    { name: "Chicken Breast (4 oz)", meal: "Dinner", color: "green", calories: 187, protein: 35, carbs: 0, fat: 4 },
-    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", meal: "Dinner", color: "green", calories: 300, protein: 10, carbs: 10, fat: 27 },
-    { name: "Collard Greens (1 cup)", meal: "Dinner", color: "green", calories: 70, protein: 5, carbs: 10, fat: 1 },
+    // Snacks (unhealthy)
+    { name: "Potato Chips", meal: "Snack", calories: 150, protein: 2, carbs: 15, fat: 10, color: "red", notes:"Bad sodium source, fried fats." },
+    { name: "Gummy Worms", meal: "Snack", calories: 120, protein: 0, carbs: 30, fat: 0, color: "red", notes:"Sugar high, zero nutrients." },
+    { name: "Candy Bar", meal: "Snack", calories: 250, protein: 2, carbs: 34, fat: 12, color: "red", notes:"Empty calories, low satiety." },
+    { name: "Movie Popcorn", meal: "Snack", calories: 130, protein: 2, carbs: 20, fat: 7, color: "red", notes:"Excess salt, bad for hydration." },
 
-    // Snacks
-    { name: "Potato Chips", meal: "Snack", color: "red", calories: 150, protein: 2, carbs: 15, fat: 10, note: "Bad sodium source, fried fats." },
-    { name: "Gummy Worms", meal: "Snack", color: "red", calories: 140, protein: 0, carbs: 35, fat: 0, note: "Sugar high, zero nutrients." },
-    { name: "Candy Bar", meal: "Snack", color: "red", calories: 220, protein: 2, carbs: 30, fat: 12, note: "Empty calories, low satiety." },
-    { name: "Movie Popcorn", meal: "Snack", color: "red", calories: 120, protein: 2, carbs: 14, fat: 7, note: "Excess salt, bad for hydration." }
+    // Dinner
+    { name: "Salmon (6 oz)", meal: "Dinner", calories: 367, protein: 39, carbs: 0, fat: 22, color: "green", notes:"Omega-3s and satiety." },
+    { name: "Chicken Breast (4 oz)", meal: "Dinner", calories: 187, protein: 35, carbs: 0, fat: 4, color: "green", notes:"Lean protein." },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", meal: "Dinner", calories: 200, protein: 5, carbs: 7, fat: 18, color: "green", notes:"Fiber, healthy fats." },
+    { name: "Collard Greens (1 cup)", meal: "Dinner", calories: 60, protein: 4, carbs: 9, fat: 1, color: "green", notes:"High in calcium and fiber." }
   ];
 
-  const meals = ["Breakfast", "Lunch", "Snack", "Dinner"];
-  const selectedFoods = { Breakfast: [], Lunch: [], Snack: [], Dinner: [] };
+  // Store logged foods per meal
+  const loggedMeals = {
+    Breakfast: [],
+    Lunch: [],
+    Snack: [],
+    Dinner: []
+  };
 
-  // Called on page load and whenever calorieGoal or % inputs change
-  function updateTargetCalories() {
-    const calorieGoal = parseInt(document.getElementById("calorieGoal").value) || 0;
-    const bPct = parseInt(document.getElementById("breakfastPercent").value) || 0;
-    const lPct = parseInt(document.getElementById("lunchPercent").value) || 0;
-    const dPct = parseInt(document.getElementById("dinnerPercent").value) || 0;
-    const totalPct = bPct + lPct + dPct;
-    if(totalPct === 0) {
-      document.getElementById("mealLog").querySelectorAll("h4").forEach(h => h.innerText = h.innerText.split("—")[0].trim());
-      return; // prevent divide by zero
-    }
-
-    // Update meal headers with target calories
-    const mealTargets = {
-      Breakfast: Math.round(calorieGoal * bPct / totalPct),
-      Lunch: Math.round(calorieGoal * lPct / totalPct),
-      Dinner: Math.round(calorieGoal * dPct / totalPct)
-    };
-
-    const mealLogDiv = document.getElementById("mealLog");
-    let headers = mealLogDiv.querySelectorAll("h4");
-    headers.forEach(h => {
-      const mealName = h.innerText.split("—")[0].trim();
-      if(mealTargets[mealName]) {
-        h.innerText = `${mealName} — Target: ${mealTargets[mealName]} kcal`;
-      }
-    });
-  }
-
+  // Calculate and render foods as buttons
   function renderFoods() {
-    const mealLogDiv = document.getElementById("mealLog");
-    mealLogDiv.innerHTML = "";
+    const meals = ["Breakfast", "Lunch", "Snack", "Dinner"];
 
     meals.forEach(meal => {
-      if (meal === "Snack") {
-        renderSnacks();
-        return;
-      }
-      const header = document.createElement("h4");
-      header.innerText = meal;
-      mealLogDiv.appendChild(header);
-
-      const foodsForMeal = foodData.filter(f => f.meal === meal);
-      foodsForMeal.forEach(food => {
+      const containerId = meal.toLowerCase();
+      const container = document.getElementById(containerId);
+      if(!container) return;
+      container.innerHTML = ""; // Clear previous
+      const filteredFoods = foods.filter(f => f.meal === meal);
+      filteredFoods.forEach(food => {
         const btn = document.createElement("button");
         btn.className = `food-button ${food.color}`;
-        btn.innerText = `${food.name} — ${food.calories} kcal`;
-        btn.title = food.note ? food.note : "";
-        btn.addEventListener("click", () => {
-          addFoodToMeal(meal, food);
-        });
-        mealLogDiv.appendChild(btn);
+        btn.textContent = `${food.name} - ${food.calories} kcal`;
+        btn.title = food.notes;
+        btn.onclick = () => {
+          logFood(meal, food);
+          btn.disabled = true; // Prevent double-logging
+        };
+        container.appendChild(btn);
       });
-
-      const selectedDiv = document.createElement("div");
-      selectedDiv.id = `${meal.toLowerCase()}Selected`;
-      mealLogDiv.appendChild(selectedDiv);
-      updateMealSummary(meal);
     });
-
-    updateTargetCalories();
   }
 
-  function renderSnacks() {
-    const snackDiv = document.getElementById("snacks");
-    snackDiv.innerHTML = ""; // cleared heading in HTML already
+  // Log food, update UI and macros
+  function logFood(meal, food) {
+    loggedMeals[meal].push(food);
+    updateMealLog(meal);
+    updateTotals();
+  }
 
-    const snacks = foodData.filter(f => f.meal === "Snack");
-    snacks.forEach(food => {
-      const btn = document.createElement("button");
-      btn.className = `food-button ${food.color}`;
-      btn.innerText = `${food.name} — ${food.calories} kcal`;
-      btn.title = food.note ? food.note : "";
-      btn.addEventListener("click", () => {
-        addFoodToMeal("Snack", food);
-      });
-      snackDiv.appendChild(btn);
-    });
-
-    const selectedDiv = document.getElementById("snackSelected");
-    if (!selectedDiv) {
-      const div = document.createElement("div");
-      div.id = "snackSelected";
-      snackDiv.appendChild(div);
+  // Render logged foods for a meal
+  function updateMealLog(meal) {
+    const containerId = meal.toLowerCase();
+    const container = document.getElementById(containerId + "-log");
+    if(!container) {
+      // create if not exists
+      const mealDiv = document.getElementById(containerId);
+      const logDiv = document.createElement("div");
+      logDiv.id = containerId + "-log";
+      logDiv.style.marginTop = "10px";
+      mealDiv.appendChild(logDiv);
     }
-    updateMealSummary("Snack");
-  }
+    const logContainer = document.getElementById(containerId + "-log");
+    logContainer.innerHTML = `<h4>${meal} Log</h4>`;
 
-  function addFoodToMeal(meal, food) {
-    selectedFoods[meal].push(food);
-    updateMealSummary(meal);
-    updateDailyTotals();
-  }
-
-  function updateMealSummary(meal) {
-    const container = document.getElementById(`${meal.toLowerCase()}Selected`);
-    if (!container) return;
-    container.innerHTML = "";
-
-    if (selectedFoods[meal].length === 0) {
-      container.innerText = "No foods selected yet.";
-      return;
-    }
-
-    let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
-    selectedFoods[meal].forEach(food => {
-      totalCalories += food.calories;
-      totalProtein += food.protein;
-      totalCarbs += food.carbs;
-      totalFat += food.fat;
+    let totalCal = 0, totalP = 0, totalC = 0, totalF = 0;
+    loggedMeals[meal].forEach(food => {
+      totalCal += food.calories;
+      totalP += food.protein;
+      totalC += food.carbs;
+      totalF += food.fat;
       const p = document.createElement("p");
-      p.className = "selected-food";
-      p.innerText = `${food.name} — ${food.calories} kcal`;
-      container.appendChild(p);
+      p.textContent = `${food.name} — ${food.calories} kcal, P: ${food.protein}g, C: ${food.carbs}g, F: ${food.fat}g`;
+      logContainer.appendChild(p);
     });
 
-    const caloriesFromProtein = totalProtein * 4;
-    const caloriesFromCarbs = totalCarbs * 4;
-    const caloriesFromFat = totalFat * 9;
-    const totalMacroCalories = caloriesFromProtein + caloriesFromCarbs + caloriesFromFat;
-
-    let pctProtein = 0, pctCarbs = 0, pctFat = 0;
-    if(totalMacroCalories > 0) {
-      pctProtein = ((caloriesFromProtein / totalMacroCalories) * 100).toFixed(1);
-      pctCarbs = ((caloriesFromCarbs / totalMacroCalories) * 100).toFixed(1);
-      pctFat = ((caloriesFromFat / totalMacroCalories) * 100).toFixed(1);
-    }
+    // Macronutrient percentages for this meal
+    const totalMacros = totalP*4 + totalC*4 + totalF*9;
+    let pPercent = totalMacros ? ((totalP*4/totalMacros)*100).toFixed(1) : 0;
+    let cPercent = totalMacros ? ((totalC*4/totalMacros)*100).toFixed(1) : 0;
+    let fPercent = totalMacros ? ((totalF*9/totalMacros)*100).toFixed(1) : 0;
 
     const summary = document.createElement("p");
-    summary.style.fontWeight = "bold";
-    summary.innerText = `Total: ${totalCalories} kcal — Protein: ${pctProtein}%, Carbs: ${pctCarbs}%, Fat: ${pctFat}%`;
-    container.appendChild(summary);
+    summary.innerHTML = `<strong>Total: ${totalCal} kcal — Protein: ${pPercent}%, Carbs: ${cPercent}%, Fat: ${fPercent}%</strong>`;
+    logContainer.appendChild(summary);
   }
 
-  function updateDailyTotals() {
-    const dailyDiv = document.getElementById("dailyTotals");
-    let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
-    meals.forEach(meal => {
-      selectedFoods[meal].forEach(food => {
-        totalCalories += food.calories;
-        totalProtein += food.protein;
-        totalCarbs += food.carbs;
-        totalFat += food.fat;
+  // Update daily total calories and macros
+  function updateTotals() {
+    const foodLog = document.getElementById("foodLog");
+    foodLog.innerHTML = "<h4>Daily Totals</h4>";
+
+    let dayCal = 0, dayP = 0, dayC = 0, dayF = 0;
+    Object.values(loggedMeals).forEach(mealArr => {
+      mealArr.forEach(food => {
+        dayCal += food.calories;
+        dayP += food.protein;
+        dayC += food.carbs;
+        dayF += food.fat;
       });
     });
 
-    const caloriesFromProtein = totalProtein * 4;
-    const caloriesFromCarbs = totalCarbs * 4;
-    const caloriesFromFat = totalFat * 9;
-    const totalMacroCalories = caloriesFromProtein + caloriesFromCarbs + caloriesFromFat;
+    const totalMacros = dayP*4 + dayC*4 + dayF*9;
+    let pPercent = totalMacros ? ((dayP*4/totalMacros)*100).toFixed(1) : 0;
+    let cPercent = totalMacros ? ((dayC*4/totalMacros)*100).toFixed(1) : 0;
+    let fPercent = totalMacros ? ((dayF*9/totalMacros)*100).toFixed(1) : 0;
 
-    let pctProtein = 0, pctCarbs = 0, pctFat = 0;
-    if(totalMacroCalories > 0) {
-      pctProtein = ((caloriesFromProtein / totalMacroCalories) * 100).toFixed(1);
-      pctCarbs = ((caloriesFromCarbs / totalMacroCalories) * 100).toFixed(1);
-      pctFat = ((caloriesFromFat / totalMacroCalories) * 100).toFixed(1);
-    }
-
-    dailyDiv.innerHTML = `Daily Total: ${totalCalories} kcal — Protein: ${pctProtein}%, Carbs: ${pctCarbs}%, Fat: ${pctFat}%`;
+    foodLog.innerHTML += `<p><strong>Calories: ${dayCal} kcal</strong></p>`;
+    foodLog.innerHTML += `<p><strong>Macros: Protein ${pPercent}%, Carbs ${cPercent}%, Fat ${fPercent}%</strong></p>`;
   }
 
-  // Other functions as before for rollerblading, weight, map...
+  // Rollerblading session tracking
+  let map, rollerPolyline, marker, watchPositionId = null;
+  const rollerSession = { startTime: null, positions: [] };
 
+  function initMap() {
+    const defaultLocation = { lat: 40.7359, lng: -73.9911 }; // Union Square NYC
+    map = new google.maps.Map(document.getElementById("map"), { zoom: 15, center: defaultLocation });
+    rollerPolyline = new google.maps.Polyline({
+      map: map,
+      path: [],
+      strokeColor: "#FF0000",
+      strokeWeight: 3
+    });
+  }
+
+  function startSession() {
+    if (rollerSession.startTime) {
+      alert("Session already started!");
+      return;
+    }
+    rollerSession.startTime = new Date();
+    rollerSession.positions = [];
+    document.getElementById("startBtn").disabled = true;
+    document.getElementById("stopBtn").disabled = false;
+    updateWeather();
+    watchPositionId = navigator.geolocation.watchPosition(updatePosition, err => console.error(err), { enableHighAccuracy: true });
+    document.getElementById("warning").innerText = "";
+  }
+
+  function stopSession() {
+    if (!rollerSession.startTime) {
+      alert("No active session.");
+      return;
+    }
+    navigator.geolocation.clearWatch(watchPositionId);
+    rollerSession.startTime = null;
+    rollerSession.positions = [];
+    document.getElementById("startBtn").disabled = false;
+    document.getElementById("stopBtn").disabled = true;
+    document.getElementById("weather").innerHTML = "";
+    document.getElementById("warning").innerText = "";
+    rollerPolyline.setPath([]);
+    if(marker) marker.setMap(null);
+  }
+
+  function updatePosition(position) {
+    const pos = { lat: position.coords.latitude, lng: position.coords.longitude };
+    rollerSession.positions.push(pos);
+    rollerPolyline.getPath().push(new google.maps.LatLng(pos.lat, pos.lng));
+    map.panTo(pos);
+    if (!marker) {
+      marker = new google.maps.Marker({ map: map, position: pos });
+    } else {
+      marker.setPosition(pos);
+    }
+  }
+
+  async function updateWeather() {
+    try {
+      // Dummy weather fetch - replace with real API if you want
+      const tempF = 95; // Hardcoded for demo
+      const weatherDiv = document.getElementById("weather");
+      weatherDiv.innerHTML = `<p>Current Temperature: ${tempF} °F</p>`;
+      const warningDiv = document.getElementById("warning");
+      if (tempF > 90) {
+        warningDiv.innerText = "⚠️ Extreme heat! Stay hydrated and monitor sodium intake.";
+      } else {
+        warningDiv.innerText = "";
+      }
+    } catch(e) {
+      console.error("Weather update failed:", e);
+    }
+  }
+
+  // Weight tracking with Chart.js
+  const weightLog = [];
+  let weightChart;
+
+  function logWeight() {
+    const input = document.getElementById("dailyWeight");
+    const weight = parseFloat(input.value);
+    if (!weight || weight <= 0) {
+      alert("Please enter a valid weight.");
+      return;
+    }
+    const today = new Date().toISOString().split("T")[0];
+    weightLog.push({ date: today, weight });
+    renderWeightLog();
+    input.value = "";
+    updateWeightChart();
+  }
+
+  function renderWeightLog() {
+    const logDiv = document.getElementById("weightLog");
+    logDiv.innerHTML = "<h4>Weight Log</h4>";
+    weightLog.forEach(entry => {
+      const p = document.createElement("p");
+      p.innerText = `${entry.date}: ${entry.weight} lbs`;
+      logDiv.appendChild(p);
+    });
+  }
+
+  function updateWeightChart() {
+    const ctx = document.getElementById('weight-progress-chart').getContext('2d');
+    const labels = weightLog.map(entry => entry.date);
+    const data = weightLog.map(entry => entry.weight);
+
+    if (weightChart) weightChart.destroy();
+    weightChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Weight (lbs)',
+          data,
+          borderColor: 'blue',
+          fill: false,
+          tension: 0.3
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: false
+          }
+        }
+      }
+    });
+  }
+
+  // Initial rendering
   document.addEventListener("DOMContentLoaded", () => {
     renderFoods();
-    updateTargetCalories();
-    // initMap() call if you have Google Maps API key set up
+    updateTotals();
+
+    if(window.google && google.maps) {
+      initMap();
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyDNyTZL3SySu9n5tkcyc9fiU34d2iviE9E&callback=initMap";
+      script.defer = true;
+      document.head.appendChild(script);
+    }
   });
 </script>
-<!-- Include Google Maps API script here as before -->
+
 </body>
 </html>
