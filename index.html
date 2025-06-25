@@ -6,179 +6,70 @@
   <title>BladeTrack Web App</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    button, input, label { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; }
+    button, input, label, select { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; }
     .hot-warning { color: orange; font-weight: bold; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
     th { background-color: #f9f9f9; }
     .checkboxes { margin: 10px 0; }
     .checkboxes label { display: block; font-size: 16px; }
+    #map { height: 300px; margin: 20px 0; }
   </style>
 </head>
 <body>
 
-<h1>BladeTrack</h1>
-<label for="weight">Your weight (lbs):</label>
-<input type="number" id="weight" placeholder="Enter your weight" />
+<h2>BladeTrack Web App</h2>
+<p>Track your calories, macros, and rollerblading sessions.</p>
 
-<p id="weather"></p>
-<p class="hot-warning" id="warning"></p>
-
-<button onclick="startSession()">Start Rollerblading</button>
-<button onclick="stopSession()">Stop</button>
-<button onclick="clearLog()">🗑️ Clear All Sessions</button>
-
-<p id="result"></p>
-<div id="checklist" style="display:none;">
-  <h3>Did you...</h3>
-  <div class="checkboxes">
-    <label><input type="checkbox" id="drankWater"> Drink water?</label>
-    <label><input type="checkbox" id="ateBanana"> Eat potassium-rich food (banana, avocado)?</label>
-    <label><input type="checkbox" id="ateSaltyFood"> Consume salty food or LMNT?</label>
-  </div>
-  <button onclick="saveChecklist()">Save Session</button>
-</div>
-
-<div id="log"></div>
-
-<h2>Food Log</h2>
 <div id="foodLog"></div>
 
 <script>
-const MET_ROLLERBLADING = 7.0;
-let startTime = null;
-
-// Hardcoded Union Square summer conditions
-const temperatureF = 89.6;
-const humidity = 70;
-document.getElementById("weather").innerText = `Union Square: ${temperatureF}°F — ${humidity}% humidity`;
-if (temperatureF > 86) {
-  document.getElementById("warning").innerText = "🔥 It’s hot! Drink water and eat potassium-rich foods like bananas. Use LMNT or broth for sodium. Smartwater doesn't cut it.";
-}
-
-function startSession() {
-  const weightInput = document.getElementById("weight").value;
-  if (!weightInput || isNaN(weightInput) || weightInput <= 0) {
-    alert("Please enter a valid weight in pounds.");
-    return;
-  }
-  startTime = Date.now();
-  document.getElementById("result").innerText = "Session started...";
-}
-
-function stopSession() {
-  if (!startTime) {
-    alert("You need to start a session first.");
-    return;
-  }
-  const durationMin = (Date.now() - startTime) / 60000;
-  const weightLbs = parseFloat(document.getElementById("weight").value);
-  const weightKg = weightLbs * 0.453592;
-  const tempMod = temperatureF > 86 ? 1.15 : 1;
-  const kcal = MET_ROLLERBLADING * weightKg * (durationMin / 60) * tempMod;
-  const date = new Date().toLocaleString();
-  const entry = {
-    date,
-    duration: durationMin.toFixed(1),
-    calories: Math.round(kcal),
-    temperature: temperatureF,
-    water: false,
-    banana: false,
-    salty: false
-  };
-  localStorage.setItem("current_session", JSON.stringify(entry));
-  document.getElementById("checklist").style.display = "block";
-  document.getElementById("result").innerText = `Duration: ${entry.duration} minutes\nCalories burned: ${entry.calories}`;
-}
-
-function saveChecklist() {
-  let entry = JSON.parse(localStorage.getItem("current_session"));
-  if (!entry) return;
-  entry.water = document.getElementById("drankWater").checked;
-  entry.banana = document.getElementById("ateBanana").checked;
-  entry.salty = document.getElementById("ateSaltyFood").checked;
-  let log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
-  log.unshift(entry);
-  localStorage.setItem("blade_sessions", JSON.stringify(log));
-  localStorage.removeItem("current_session");
-  displaySessionLog();
-  document.getElementById("checklist").style.display = "none";
-  document.getElementById("drankWater").checked = false;
-  document.getElementById("ateBanana").checked = false;
-  document.getElementById("ateSaltyFood").checked = false;
-}
-
-function clearLog() {
-  localStorage.removeItem("blade_sessions");
-  displaySessionLog();
-}
-
-function displaySessionLog() {
-  const log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
-  const container = document.getElementById("log");
-  if (!log.length) {
-    container.innerHTML = "<p>No sessions logged.</p>";
-    return;
-  }
-  let html = `<table><tr><th>Date</th><th>Duration (min)</th><th>Calories</th><th>Water</th><th>Potassium</th><th>Sodium</th></tr>`;
-  for (const entry of log) {
-    html += `<tr>
-      <td>${entry.date}</td>
-      <td>${entry.duration}</td>
-      <td>${entry.calories}</td>
-      <td>${entry.water ? "✅" : "❌"}</td>
-      <td>${entry.banana ? "✅" : "❌"}</td>
-      <td>${entry.salty ? "✅" : "❌"}</td>
-    </tr>`;
-  }
-  html += "</table>";
-  container.innerHTML = html;
-}
-
-displaySessionLog();
-
-// Food log (new section)
 const foodDB = [
-  { name: "Banana Baby Food (1 container)", calories: 100 },
-  { name: "Peanut Butter, Unsalted (1 tsp)", calories: 32 },
-  { name: "Tofu (1/2 pack, 102.5g)", calories: 200 },
-  { name: "Whey Protein Isolate (1 scoop)", calories: 110 },
-  { name: "Salmon (6 oz, cooked)", calories: 350 },
-  { name: "Mixed Greens Salad (1 bowl)", calories: 35 },
-  { name: "Chips (1 small bag)", calories: 150, guilt: "Really? This is what we're doing?" },
-  { name: "Movie Theater Popcorn (2 cups)", calories: 200, guilt: "Sure, go ahead. Undo your whole workout." }
+  { name: "Plain Nonfat Yogurt (6 oz)", calories: 90, protein: 9, carbs: 12, fat: 0, meal: "breakfast" },
+  { name: "Banana Baby Food (1 container)", calories: 100, protein: 1, carbs: 22, fat: 0, meal: "breakfast" },
+  { name: "Peanut Butter, Unsalted (1 tsp)", calories: 32, protein: 1.5, carbs: 1, fat: 3, meal: "breakfast" },
+  { name: "Tofu (102.5g / half pack)", calories: 200, protein: 20, carbs: 4, fat: 12, meal: "lunch" },
+  { name: "Salmon (6 oz)", calories: 350, protein: 34, carbs: 0, fat: 22, meal: "lunch" },
+  { name: "Mixed Greens Salad (1 bowl)", calories: 35, protein: 2, carbs: 5, fat: 0, meal: "lunch" },
+  { name: "Whey Protein Isolate (1 scoop)", calories: 110, protein: 25, carbs: 1, fat: 0.5, meal: "dinner" },
+  { name: "Chips (1 small bag)", calories: 150, protein: 2, carbs: 15, fat: 10, meal: "dinner", guilt: "Really? This is what we're doing?" },
+  { name: "Movie Theater Popcorn (2 cups)", calories: 200, protein: 3, carbs: 18, fat: 15, meal: "dinner", guilt: "Sure, go ahead. Undo your whole workout." }
 ];
-
-function renderFoodLog() {
-  const container = document.getElementById("foodLog");
-  container.innerHTML = "";
-  foodDB.forEach((food, idx) => {
-    const btn = document.createElement("button");
-    btn.innerText = `${food.name} — ${food.calories} kcal`;
-    btn.onclick = () => {
-      if (food.guilt) alert(`${food.name}: ${food.guilt}`);
-      let log = JSON.parse(localStorage.getItem("food_log") || "[]");
-      log.push({ name: food.name, calories: food.calories });
-      localStorage.setItem("food_log", JSON.stringify(log));
-      updateFoodLog();
-    };
-    container.appendChild(btn);
-  });
-}
 
 function updateFoodLog() {
   const log = JSON.parse(localStorage.getItem("food_log") || "[]");
-  const container = document.createElement("div");
-  let total = 0;
+  let total = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
   log.forEach(item => {
+    const dbItem = foodDB.find(f => f.name === item.name);
     total += item.calories;
+    if (dbItem) {
+      totalProtein += dbItem.protein || 0;
+      totalCarbs += dbItem.carbs || 0;
+      totalFat += dbItem.fat || 0;
+    }
   });
-  container.innerHTML = `<p>Total food calories today: ${total} kcal</p>`;
-  document.getElementById("foodLog").appendChild(container);
+  const macroTotal = totalProtein * 4 + totalCarbs * 4 + totalFat * 9;
+  const proteinPct = ((totalProtein * 4) / macroTotal * 100).toFixed(1);
+  const carbsPct = ((totalCarbs * 4) / macroTotal * 100).toFixed(1);
+  const fatPct = ((totalFat * 9) / macroTotal * 100).toFixed(1);
+
+  const summary = document.createElement("div");
+  summary.innerHTML = `
+    <p>Total food calories today: ${total} kcal</p>
+    <p>Macronutrient breakdown:</p>
+    <ul>
+      <li>Protein: ${totalProtein}g (${proteinPct}%)</li>
+      <li>Carbs: ${totalCarbs}g (${carbsPct}%)</li>
+      <li>Fat: ${totalFat}g (${fatPct}%)</li>
+    </ul>`;
+  document.getElementById("foodLog").appendChild(summary);
+}
+
+function renderFoodLog() {
+  updateFoodLog();
 }
 
 renderFoodLog();
-updateFoodLog();
 </script>
 </body>
 </html>
