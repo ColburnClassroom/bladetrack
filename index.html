@@ -21,9 +21,76 @@
 <h2>BladeTrack Web App</h2>
 <p>Track your calories, macros, and rollerblading sessions.</p>
 
+<p>Your weight (lbs): <input type="number" id="weight" value="150"></p>
+<button onclick="startSession()">Start Rollerblading</button>
+<button onclick="stopSession()">Stop</button>
+<div id="weather"></div>
+<div id="warning" class="hot-warning"></div>
+<div class="checkboxes" id="checklist" style="display:none;">
+  <label><input type="checkbox" id="drankWater"> Drank water</label>
+  <label><input type="checkbox" id="ateBanana"> Ate banana</label>
+  <label><input type="checkbox" id="ateSaltyFood"> Ate salty food</label>
+  <button onclick="saveChecklist()">✔️ Save Session</button>
+</div>
+<div id="result"></div>
+<div id="map"></div>
+
+<h3>Food Log</h3>
 <div id="foodLog"></div>
 
 <script>
+const MET_ROLLERBLADING = 7.0;
+let startTime = null;
+
+// Hardcoded Union Square summer conditions
+const temperatureF = 89.6;
+const humidity = 70;
+document.getElementById("weather").innerText = `Union Square: ${temperatureF}°F — ${humidity}% humidity`;
+if (temperatureF > 86) {
+  document.getElementById("warning").innerText = "🔥 It’s hot! Drink water and eat potassium-rich foods like bananas.";
+}
+
+function startSession() {
+  const weightInput = document.getElementById("weight").value;
+  if (!weightInput || isNaN(weightInput) || weightInput <= 0) {
+    alert("Enter your weight in pounds.");
+    return;
+  }
+  startTime = Date.now();
+  document.getElementById("result").innerText = "Session started...";
+}
+
+function stopSession() {
+  if (!startTime) return;
+  const durationMin = (Date.now() - startTime) / 60000;
+  const weightLbs = parseFloat(document.getElementById("weight").value);
+  const weightKg = weightLbs * 0.4536;
+  const tempMod = temperatureF > 86 ? 1.15 : 1;
+  const kcal = MET_ROLLERBLADING * weightKg * (durationMin / 60) * tempMod;
+  const date = new Date().toLocaleString();
+  const entry = {
+    date, duration: durationMin.toFixed(1), calories: Math.round(kcal), temperature: temperatureF,
+    water: false, banana: false, salty: false
+  };
+  localStorage.setItem("current_session", JSON.stringify(entry));
+  document.getElementById("checklist").style.display = "block";
+  document.getElementById("result").innerText = `Duration: ${entry.duration} minutes\nCalories burned: ${entry.calories}`;
+  startTime = null;
+}
+
+function saveChecklist() {
+  let entry = JSON.parse(localStorage.getItem("current_session"));
+  if (!entry) return;
+  entry.water = document.getElementById("drankWater").checked;
+  entry.banana = document.getElementById("ateBanana").checked;
+  entry.salty = document.getElementById("ateSaltyFood").checked;
+  let log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
+  log.unshift(entry);
+  localStorage.setItem("blade_sessions", JSON.stringify(log));
+  localStorage.removeItem("current_session");
+  document.getElementById("checklist").style.display = "none";
+}
+
 const foodDB = [
   { name: "Plain Nonfat Yogurt (6 oz)", calories: 90, protein: 9, carbs: 12, fat: 0, meal: "breakfast" },
   { name: "Banana Baby Food (1 container)", calories: 100, protein: 1, carbs: 22, fat: 0, meal: "breakfast" },
@@ -62,14 +129,11 @@ function updateFoodLog() {
       <li>Carbs: ${totalCarbs}g (${carbsPct}%)</li>
       <li>Fat: ${totalFat}g (${fatPct}%)</li>
     </ul>`;
+  document.getElementById("foodLog").innerHTML = "";
   document.getElementById("foodLog").appendChild(summary);
 }
 
-function renderFoodLog() {
-  updateFoodLog();
-}
-
-renderFoodLog();
+updateFoodLog();
 </script>
 </body>
 </html>
