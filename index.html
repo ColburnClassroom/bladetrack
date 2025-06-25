@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>BladeTrack Web</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+    button, input, label { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; }
+    .hot-warning { color: orange; font-weight: bold; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
+    th { background-color: #f9f9f9; }
+    .checkboxes { margin: 10px 0; }
+    .checkboxes label { display: block; font-size: 16px; }
+    .small-btn { background: #eee; border: none; padding: 8px 12px; font-size: 14px; cursor: pointer; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+  <h1>BladeTrack</h1>
+
+  <label for="weight">Your weight (lbs):</label>
+  <input type="number" id="weight" placeholder="e.g. 154" />
+
+  <p id="weather">Weather data: Union Square, NYC</p>
+
+  <button onclick="startSession()">Start Rollerblading</button>
+  <button onclick="stopSession()" id="stopBtn" disabled>Stop</button>
+
+  <p id="result"></p>
+  <p id="warning" class="hot-warning"></p>
+
+  <div class="checkboxes" id="checklist" style="display:none;">
+    <p>✅ After Skating:</p>
+    <label><input type="checkbox" id="drankWater"> Drank water</label>
+    <label><input type="checkbox" id="ateBanana"> Ate a banana (potassium)</label>
+    <label><input type="checkbox" id="ateSaltyFood"> Ate salty food (sodium)</label>
+    <button class="small-btn" onclick="saveChecklist()">Save Recovery Checklist</button>
+  </div>
+
+  <div id="log"></div>
+  <button class="small-btn" onclick="clearLog()">🗑️ Clear All Sessions</button>
+
+  <script>
+    const MET_ROLLERBLADING = 7.0;
+    let startTime = null;
+
+    // Hardcoded Union Square summer conditions
+    const temperatureF = 89.6; // °F
+    const temperatureC = (temperatureF - 32) * 5 / 9;
+    const humidity = 70;
+
+    document.getElementById("weather").innerText = `Union Square: ${temperatureF}°F — ${humidity}% humidity`;
+
+    if (temperatureF > 86) {
+      document.getElementById("warning").innerText = "🔥 It's hot! Drink water and eat potassium-rich foods like bananas.";
+    }
+
+    function startSession() {
+      const weightInput = document.getElementById("weight").value;
+      if (!weightInput || isNaN(weightInput) || weightInput <= 0) {
+        alert("Please enter your weight in pounds.");
+        return;
+      }
+
+      startTime = Date.now();
+      document.getElementById("result").innerText = "";
+      document.getElementById("stopBtn").disabled = false;
+      document.getElementById("checklist").style.display = "none";
+    }
+
+    function stopSession() {
+      if (!startTime) return;
+
+      const weightLbs = parseFloat(document.getElementById("weight").value);
+      const weightKg = weightLbs * 0.453592; // convert to kg
+
+      const durationMin = (Date.now() - startTime) / 60000;
+      const tempMod = temperatureF > 86 ? 1.15 : 1;
+      const kcal = MET_ROLLERBLADING * weightKg * (durationMin / 60) * tempMod;
+
+      const date = new Date().toLocaleString();
+      const entry = {
+        date,
+        duration: durationMin.toFixed(1),
+        calories: Math.round(kcal),
+        temperature: temperatureF,
+        water: false,
+        banana: false,
+        salty: false
+      };
+
+      localStorage.setItem("current_session", JSON.stringify(entry));
+      document.getElementById("checklist").style.display = "block";
+
+      document.getElementById("result").innerText =
+        `Duration: ${entry.duration} minutes\nCalories burned: ${entry.calories}`;
+    }
+
+    function saveChecklist() {
+      let entry = JSON.parse(localStorage.getItem("current_session"));
+      if (!entry) return;
+
+      entry.water = document.getElementById("drankWater").checked;
+      entry.banana = document.getElementById("ateBanana").checked;
+      entry.salty = document.getElementById("ateSaltyFood").checked;
+
+      let log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
+      log.unshift(entry);
+      localStorage.setItem("blade_sessions", JSON.stringify(log));
+      localStorage.removeItem("current_session");
+
+      displaySessionLog();
+      document.getElementById("checklist").style.display = "none";
+      document.getElementById("drankWater").checked = false;
+      document.getElementById("ateBanana").checked = false;
+      document.getElementById("ateSaltyFood").checked = false;
+    }
+
+    function displaySessionLog() {
+      const log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
+
+      if (log.length === 0) {
+        document.getElementById("log").innerHTML = "<p>No past sessions yet.</p>";
+        return;
+      }
+
+      let html = "<h2>Session Log</h2><table><tr><th>Date</th><th>Min</th><th>kcal</th><th>Temp (°F)</th><th>✔️ Water</th><th>🍌</th><th>🧂</th></tr>";
+
+      log.forEach(entry => {
+        html += `<tr>
+          <td>${entry.date}</td>
+          <td>${entry.duration}</td>
+          <td>${entry.calories}</td>
+          <td>${entry.temperature}</td>
+          <td>${entry.water ? "✔️" : ""}</td>
+          <td>${entry.banana ? "🍌" : ""}</td>
+          <td>${entry.salty ? "🧂" : ""}</td>
+        </tr>`;
+      });
+
+      html += "</table>";
+      document.getElementById("log").innerHTML = html;
+    }
+
+    function clearLog() {
+      if (confirm("Are you sure you want to delete all sessions?")) {
+        localStorage.removeItem("blade_sessions");
+        localStorage.removeItem("current_session");
+        displaySessionLog();
+      }
+    }
+
+    displaySessionLog();
+  </script>
+
+</body>
+</html>
