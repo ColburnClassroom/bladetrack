@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.24</title>
+  <title>BladeTrack Web App v1.25</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    button, input, label, select { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; }
+    button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
     .hot-warning { color: orange; font-weight: bold; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
@@ -14,11 +14,15 @@
     .checkboxes { margin: 10px 0; }
     .checkboxes label { display: block; font-size: 16px; }
     #map { height: 300px; margin: 20px 0; }
+    .food-button { display: block; width: 100%; margin: 5px 0; padding: 10px; font-size: 14px; border-radius: 5px; border: none; text-align: left; }
+    .green { background-color: #e0f7e9; border-left: 5px solid green; }
+    .yellow { background-color: #fff9e6; border-left: 5px solid orange; }
+    .red { background-color: #fdecea; border-left: 5px solid red; }
   </style>
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.24</h2>
+<h2>BladeTrack Web App v1.25</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
@@ -63,34 +67,37 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-  // Insert full JS logic for updating meals, snacks, macros, rollerblading tracking, and graphs
-  const foodItems = [
-    { name: "Banana baby food", meal: "breakfast", color: "green", calories: 100, protein: 1, carbs: 22, fat: 0.5 },
-    { name: "Tofu (102.5g)", meal: "breakfast", color: "green", calories: 200, protein: 22, carbs: 4, fat: 12 },
-    { name: "Yogurt (plain, nonfat)", meal: "breakfast", color: "green", calories: 100, protein: 10, carbs: 12, fat: 0 },
-    { name: "Peanut butter (1 tsp)", meal: "breakfast", color: "yellow", calories: 32, protein: 1.3, carbs: 1, fat: 2.7 },
-    { name: "Whey protein isolate (1 scoop)", meal: "breakfast", color: "green", calories: 110, protein: 25, carbs: 1, fat: 0.5 },
-    { name: "Whey protein isolate (1 scoop)", meal: "lunch", color: "green", calories: 110, protein: 25, carbs: 1, fat: 0.5 },
-    { name: "Salmon (6 oz)", meal: "lunch", color: "green", calories: 367, protein: 39, carbs: 0, fat: 22 },
-    { name: "Chicken breast (4 oz)", meal: "lunch", color: "green", calories: 187, protein: 35, carbs: 0, fat: 4 },
-    { name: "Collard greens (1 cup cooked)", meal: "lunch", color: "green", calories: 63, protein: 5, carbs: 10, fat: 1 },
-    { name: "Salmon (6 oz)", meal: "dinner", color: "green", calories: 367, protein: 39, carbs: 0, fat: 22 },
-    { name: "Chicken breast (4 oz)", meal: "dinner", color: "green", calories: 187, protein: 35, carbs: 0, fat: 4 },
-    { name: "Collard greens (1 cup cooked)", meal: "dinner", color: "green", calories: 63, protein: 5, carbs: 10, fat: 1 },
-    { name: "Mixed nuts (5 each: pistachio, almond, cashew, walnut)", meal: "breakfast", color: "yellow", calories: 120, protein: 3, carbs: 4, fat: 10 },
-    { name: "Mixed nuts (5 each: pistachio, almond, cashew, walnut)", meal: "lunch", color: "yellow", calories: 120, protein: 3, carbs: 4, fat: 10 },
-    { name: "Mixed nuts (5 each: pistachio, almond, cashew, walnut)", meal: "dinner", color: "yellow", calories: 120, protein: 3, carbs: 4, fat: 10 }
-  ];
+const foodItems = [
+  { name: "Banana baby food", meal: "breakfast", color: "green", description: "Easy-to-digest carbs for energy", calories: 100, protein: 1, carbs: 22, fat: 0.5 },
+  { name: "Tofu (102.5g)", meal: "breakfast", color: "green", description: "High in protein and fat for satiety", calories: 200, protein: 22, carbs: 4, fat: 12 },
+  { name: "Yogurt (plain, nonfat)", meal: "breakfast", color: "green", description: "Good protein and gut health support", calories: 100, protein: 10, carbs: 12, fat: 0 },
+  { name: "Peanut butter (1 tsp)", meal: "breakfast", color: "yellow", description: "Energy dense, small portion recommended", calories: 32, protein: 1.3, carbs: 1, fat: 2.7 },
+  { name: "Whey protein isolate (1 scoop)", meal: "breakfast", color: "green", description: "High-quality protein with low fat", calories: 110, protein: 25, carbs: 1, fat: 0.5 },
+  { name: "Whey protein isolate (1 scoop)", meal: "lunch", color: "green", description: "High-quality protein for recovery", calories: 110, protein: 25, carbs: 1, fat: 0.5 },
+  { name: "Salmon (6 oz)", meal: "lunch", color: "green", description: "Rich in omega-3s and protein, very filling", calories: 367, protein: 39, carbs: 0, fat: 22 },
+  { name: "Chicken breast (4 oz)", meal: "lunch", color: "green", description: "Lean protein, low calorie", calories: 187, protein: 35, carbs: 0, fat: 4 },
+  { name: "Collard greens (1 cup cooked)", meal: "lunch", color: "green", description: "High fiber, vitamin-rich vegetable", calories: 63, protein: 5, carbs: 10, fat: 1 },
+  { name: "Salmon (6 oz)", meal: "dinner", color: "green", description: "Great source of protein and healthy fats", calories: 367, protein: 39, carbs: 0, fat: 22 },
+  { name: "Chicken breast (4 oz)", meal: "dinner", color: "green", description: "Filling lean protein", calories: 187, protein: 35, carbs: 0, fat: 4 },
+  { name: "Collard greens (1 cup cooked)", meal: "dinner", color: "green", description: "Good potassium and fiber", calories: 63, protein: 5, carbs: 10, fat: 1 },
+  { name: "Mixed nuts (5 each: pistachio, almond, cashew, walnut)", meal: "breakfast", color: "yellow", description: "Good fats but calorie dense", calories: 120, protein: 3, carbs: 4, fat: 10 },
+  { name: "Mixed nuts (5 each: pistachio, almond, cashew, walnut)", meal: "lunch", color: "yellow", description: "Moderate protein, high fat snack", calories: 120, protein: 3, carbs: 4, fat: 10 },
+  { name: "Mixed nuts (5 each: pistachio, almond, cashew, walnut)", meal: "dinner", color: "yellow", description: "Nutritious but portion control is key", calories: 120, protein: 3, carbs: 4, fat: 10 },
+  { name: "Potato chips (1 oz)", meal: "snack", color: "red", description: "Not a good source of sodium for rehydration", calories: 160, protein: 2, carbs: 15, fat: 10 },
+  { name: "Popcorn (bagged, salted)", meal: "snack", color: "red", description: "Low electrolyte content, poor rehydration", calories: 140, protein: 2, carbs: 20, fat: 8 },
+  { name: "Gummy worms", meal: "snack", color: "red", description: "High sugar, not filling, sugar crash risk", calories: 100, protein: 0, carbs: 25, fat: 0 },
+  { name: "Candy bar", meal: "snack", color: "red", description: "High sugar and fat, not satisfying", calories: 220, protein: 2, carbs: 28, fat: 12 }
+];
 </script>
 <script>
-  function initMap() {
-    const unionSquare = { lat: 40.7359, lng: -73.9911 };
-    const map = new google.maps.Map(document.getElementById("map"), {
-      zoom: 15,
-      center: unionSquare
-    });
-    new google.maps.Marker({ position: unionSquare, map: map });
-  }
+function initMap() {
+  const unionSquare = { lat: 40.7359, lng: -73.9911 };
+  const map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 15,
+    center: unionSquare
+  });
+  new google.maps.Marker({ position: unionSquare, map: map });
+}
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNyTZL3SySu9n5tkcyc9fiU34d2iviE9E&callback=initMap" async defer></script>
 </body>
