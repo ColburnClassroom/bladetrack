@@ -1,361 +1,314 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BladeTrack Daily Rollerblading Tracker</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: auto;
-      padding: 20px;
-    }
-    h1, h2 {
-      text-align: center;
-    }
-    label, button {
-      display: block;
-      margin: 10px 0 5px;
-      font-size: 16px;
-    }
-    input[type="number"], select {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      margin-bottom: 15px;
-      box-sizing: border-box;
-    }
-    button {
-      background-color: #1976d2;
-      color: white;
-      border: none;
-      padding: 12px;
-      cursor: pointer;
-      border-radius: 4px;
-    }
-    button:disabled {
-      background-color: #aaa;
-      cursor: not-allowed;
-    }
-    #warning {
-      color: #d9534f;
-      font-weight: bold;
-      margin: 15px 0;
-      text-align: center;
-    }
-    .checkbox-group label {
-      font-weight: normal;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 25px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-      font-size: 14px;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
-    #electrolyte-info {
-      margin-top: 30px;
-      font-size: 14px;
-    }
-    #electrolyte-info table {
-      font-size: 13px;
-    }
-    #electrolyte-advice {
-      margin-top: 15px;
-      padding: 15px;
-      background-color: #f9f9f9;
-      border-left: 5px solid #1976d2;
-      font-weight: bold;
-      white-space: pre-line;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BladeTrack Pro: Food & Blading Tracker</title>
+<style>
+  body { font-family: Arial,sans-serif; max-width: 700px; margin: auto; padding: 20px; }
+  h1,h2 { text-align: center; }
+  label, button { display: block; margin: 10px 0 5px; }
+  input[type=number], select { width: 100%; padding: 8px; font-size: 16px; }
+  button { background:#1976d2; color:#fff; border:none; padding:12px; cursor:pointer; border-radius:4px; }
+  button:disabled { background:#999; cursor:not-allowed; }
+  #map { height: 300px; margin-top: 10px; border:1px solid #ccc; }
+  table { width: 100%; border-collapse: collapse; margin-top:10px; }
+  th,td { border: 1px solid #ccc; padding: 6px; text-align: center; font-size: 14px; }
+  th { background:#f0f0f0; }
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
 
-  <h1>BladeTrack Daily Rollerblading Tracker</h1>
+<h1>BladeTrack Pro</h1>
 
-  <label for="weight">Your weight (lbs):</label>
-  <input type="number" id="weight" placeholder="e.g., 160" min="50" max="700" />
+<section id="calorie-planner">
+  <h2>Daily Calorie Target & Meal Distribution</h2>
+  <label for="dailyCal">Set your daily calorie goal (kcal):</label>
+  <input type="number" id="dailyCal" min="800" max="5000" value="2000" />
 
-  <label for="temperature">Today's temperature (°F):</label>
-  <input type="number" id="temperature" value="89.6" min="-20" max="130" />
+  <label>Adjust meal calorie % (must sum to 100%)</label>
+  <label>Breakfast %:
+    <input type="number" id="pctBreakfast" min="0" max="100" value="25" />
+  </label>
+  <label>Lunch %:
+    <input type="number" id="pctLunch" min="0" max="100" value="35" />
+  </label>
+  <label>Dinner %:
+    <input type="number" id="pctDinner" min="0" max="100" value="40" />
+  </label>
+  <p id="pctError" style="color:red; display:none;">Percentages must add to 100%</p>
+  <button onclick="updateMealTargets()">Update Meal Targets</button>
 
-  <label for="humidity">Today's humidity (%):</label>
-  <input type="number" id="humidity" value="70" min="0" max="100" />
+  <div id="mealTargets" style="margin-top:15px;">
+    <p>Breakfast target: <span id="breakfastTarget"></span> kcal</p>
+    <p>Lunch target: <span id="lunchTarget"></span> kcal</p>
+    <p>Dinner target: <span id="dinnerTarget"></span> kcal</p>
+  </div>
+</section>
 
-  <label for="activity">Today's activity:</label>
-  <select id="activity">
-    <option value="blade">Rollerblading</option>
-    <option value="rest">Rest / No Blading</option>
-  </select>
+<section id="food-logging" style="margin-top:40px;">
+  <h2>Log Your Meals</h2>
+  <p>Choose foods to log for each meal (high-protein, low-carb list):</p>
 
-  <div id="bladeInputs">
-    <label for="duration">Rollerblading duration (minutes):</label>
-    <input type="number" id="duration" placeholder="e.g., 45" min="1" max="300" />
+  <div>
+    <h3>Breakfast</h3>
+    <div id="breakfastFoods"></div>
+  </div>
+  <div>
+    <h3>Lunch</h3>
+    <div id="lunchFoods"></div>
+  </div>
+  <div>
+    <h3>Dinner</h3>
+    <div id="dinnerFoods"></div>
   </div>
 
-  <button id="logBtn" onclick="logDay()">Log Today</button>
+  <button onclick="saveFoodLog()">Save Daily Food Log</button>
 
-  <p id="calorieResult" style="white-space: pre-line; font-weight: bold; margin-top: 15px;"></p>
-  <p id="warning"></p>
+  <div id="foodLogSummary" style="margin-top:20px;"></div>
+</section>
 
-  <div id="recoveryChecklist" style="display:none;">
-    <h2>Recovery Checklist</h2>
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="chkWater" /> Drank enough water (at least 64 oz)</label>
-      <label><input type="checkbox" id="chkPotassium" /> Ate potassium-rich foods (banana, avocado, spinach)</label>
-      <label><input type="checkbox" id="chkSodium" /> Consumed salty foods or broth</label>
-      <label><input type="checkbox" id="chkMagnesium" /> Ate magnesium-rich foods (nuts, seeds)</label>
-      <label><input type="checkbox" id="chkElectrolyteDrink" /> Had electrolyte drink (optional)</label>
-      <label><input type="checkbox" id="chkLMNT" /> Took LMNT or similar electrolyte product</label>
-    </div>
-    <button onclick="saveRecovery()">Save Recovery Info</button>
+<section id="rollerblading-tracker" style="margin-top:40px;">
+  <h2>Rollerblading GPS Tracker</h2>
+  <button id="startTrackBtn" onclick="startTracking()">Start Session</button>
+  <button id="stopTrackBtn" onclick="stopTracking()" disabled>Stop Session</button>
+  <p id="sessionInfo"></p>
+  <div id="map"></div>
+</section>
 
-    <div id="electrolyte-info">
-      <h3>Electrolyte Comparison (per serving)</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Source</th><th>Serving Size</th><th>Sodium (mg)</th><th>Potassium (mg)</th><th>Magnesium (mg)</th><th>Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>LMNT Electrolyte Mix</td><td>1 packet</td><td>1000</td><td>200</td><td>60</td><td>High sodium, designed for heavy sweat loss</td></tr>
-          <tr><td>Banana</td><td>1 medium</td><td>1</td><td>422</td><td>32</td><td>High potassium, low sodium</td></tr>
-          <tr><td><strong>Smart Water</strong></td><td>591 mL bottle</td><td>110</td><td>0</td><td>0</td><td><strong>Negligible electrolytes — NOT effective for replenishment</strong></td></tr>
-          <tr><td>Avocado</td><td>1/2 medium</td><td>7</td><td>487</td><td>29</td><td>High potassium, low sodium</td></tr>
-          <tr><td>Broth (Chicken)</td><td>1 cup</td><td>700-900</td><td>800+</td><td>10-20</td><td>High sodium and potassium</td></tr>
-          <tr><td>Almonds</td><td>1 oz</td><td>0</td><td>200</td><td>80</td><td>Good magnesium and potassium</td></tr>
-        </tbody>
-      </table>
+<section id="electrolyte-advice" style="margin-top:40px;">
+  <h2>Electrolyte & Temperature Advice</h2>
+  <p id="electrolyteText"></p>
+</section>
 
-      <div id="electrolyte-advice"></div>
-    </div>
-  </div>
-
-  <h2>Daily Log</h2>
-  <table id="logTable">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Activity</th>
-        <th>Duration (min)</th>
-        <th>Calories Burned</th>
-        <th>Temp (°F)</th>
-        <th>Hydrated</th>
-        <th>Potassium</th>
-        <th>Sodium</th>
-        <th>Magnesium</th>
-        <th>Electrolyte Drink</th>
-        <th>LMNT</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <button onclick="clearLog()" style="margin-top:20px; background:#d9534f; color: white;">Clear Log</button>
-
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-  const MET_ROLLERBLADING = 7.0;
+  // --- Food data (high-protein, low-carb) ---
+  const foodDB = [
+    { name: "Grilled Chicken Breast (3 oz)", calories: 140, protein: 26, carbs: 0, fat: 3 },
+    { name: "Salmon (3 oz)", calories: 175, protein: 19, carbs: 0, fat: 10 },
+    { name: "Tofu (100g)", calories: 70, protein: 8, carbs: 2, fat: 4 },
+    { name: "Avocado (1/2 medium)", calories: 120, protein: 1, carbs: 6, fat: 11 },
+    { name: "Egg (1 large)", calories: 70, protein: 6, carbs: 0, fat: 5 },
+    { name: "Almonds (1 oz)", calories: 160, protein: 6, carbs: 6, fat: 14 },
+    { name: "Broccoli (1 cup)", calories: 55, protein: 4, carbs: 11, fat: 1 },
+    { name: "Greek Yogurt (plain, 6 oz)", calories: 100, protein: 17, carbs: 6, fat: 0 },
+    { name: "Spinach (1 cup)", calories: 7, protein: 1, carbs: 1, fat: 0 },
+  ];
 
-  const weightInput = document.getElementById('weight');
-  const tempInput = document.getElementById('temperature');
-  const humidityInput = document.getElementById('humidity');
-  const activitySelect = document.getElementById('activity');
-  const durationInput = document.getElementById('duration');
-  const bladeInputsDiv = document.getElementById('bladeInputs');
-  const calorieResult = document.getElementById('calorieResult');
-  const warning = document.getElementById('warning');
-  const recoveryChecklist = document.getElementById('recoveryChecklist');
-  const electrolyteAdviceDiv = document.getElementById('electrolyte-advice');
+  // --- Meal calorie targets ---
+  let dailyCal = 2000;
+  let mealPercents = { breakfast: 25, lunch: 35, dinner: 40 };
 
-  const chkWater = document.getElementById('chkWater');
-  const chkPotassium = document.getElementById('chkPotassium');
-  const chkSodium = document.getElementById('chkSodium');
-  const chkMagnesium = document.getElementById('chkMagnesium');
-  const chkElectrolyteDrink = document.getElementById('chkElectrolyteDrink');
-  const chkLMNT = document.getElementById('chkLMNT');
-
-  activitySelect.addEventListener('change', () => {
-    if(activitySelect.value === 'blade') {
-      bladeInputsDiv.style.display = 'block';
-    } else {
-      bladeInputsDiv.style.display = 'none';
-      durationInput.value = '';
-      calorieResult.textContent = '';
-      warning.textContent = '';
-      recoveryChecklist.style.display = 'none';
-      electrolyteAdviceDiv.textContent = '';
-    }
-  });
-
-  function calcCalories(weightLbs, durationMin, tempF) {
-    const weightKg = weightLbs * 0.453592;
-    const tempMod = tempF > 86 ? 1.15 : 1;
-    return MET_ROLLERBLADING * weightKg * (durationMin / 60) * tempMod;
-  }
-
-  function generateElectrolyteAdvice(tempF, activity, duration) {
-    let advice = '';
-    if (tempF > 86 || (activity === 'blade' && duration >= 45)) {
-      advice = "🔥 Hot or long session.\n" +
-               "Use LMNT or broth for real sodium replacement.\n" +
-               "Eat potassium-rich foods like bananas, avocado.\n" +
-               "Don’t trust Smartwater alone — it won’t replace lost electrolytes.\n" +
-               "Magnesium from nuts/seeds helps recovery.\n" +
-               "Stay hydrated but avoid overhydration without electrolytes.";
-    } else if (activity === 'blade') {
-      advice = "You bladed but conditions are moderate.\n" +
-               "Focus on natural potassium sources (bananas, avocado) and stay hydrated.\n" +
-               "Magnesium-rich nuts and seeds aid muscle recovery.";
-    } else {
-      advice = "Rest day logged.\n" +
-               "Maintain hydration and balanced diet with natural electrolyte foods.\n" +
-               "Consider light salty snacks or broth if you sweat a lot indoors or in heat.";
-    }
-    return advice;
-  }
-
-  function logDay() {
-    const weight = parseFloat(weightInput.value);
-    const temp = parseFloat(tempInput.value);
-    const humidity = parseFloat(humidityInput.value);
-    const activity = activitySelect.value;
-    const duration = parseFloat(durationInput.value);
-
-    if (!weight || weight < 50 || weight > 700) {
-      alert('Enter a valid weight between 50 and 700 lbs.');
+  function updateMealTargets() {
+    const b = Number(document.getElementById('pctBreakfast').value);
+    const l = Number(document.getElementById('pctLunch').value);
+    const d = Number(document.getElementById('pctDinner').value);
+    const total = b + l + d;
+    const pctError = document.getElementById('pctError');
+    if(total !== 100) {
+      pctError.style.display = 'block';
       return;
     }
-    if (!temp || temp < -20 || temp > 130) {
-      alert('Enter a valid temperature between -20°F and 130°F.');
-      return;
-    }
-    if (!humidity || humidity < 0 || humidity > 100) {
-      alert('Enter valid humidity between 0% and 100%.');
-      return;
-    }
-
-    let caloriesBurned = 0;
-    let message = '';
-    if (activity === 'blade') {
-      if (!duration || duration < 1 || duration > 300) {
-        alert('Enter a valid rollerblading duration (1 to 300 minutes).');
-        return;
-      }
-      caloriesBurned = calcCalories(weight, duration, temp);
-      message += `You bladed for ${duration.toFixed(1)} minutes.\nCalories burned: ${caloriesBurned.toFixed(0)} kcal.\n`;
-    } else {
-      message += 'Rest day logged. No calories burned from blading.\n';
-    }
-
-    calorieResult.textContent = message;
-    warning.textContent = '';
-
-    recoveryChecklist.style.display = 'block';
-
-    electrolyteAdviceDiv.textContent = generateElectrolyteAdvice(temp, activity, duration || 0);
-
-    const today = new Date().toISOString().slice(0,10);
-    const dailyEntry = {
-      date: today,
-      weight: weight,
-      temp: temp,
-      humidity: humidity,
-      activity: activity,
-      duration: activity === 'blade' ? duration : 0,
-      caloriesBurned: caloriesBurned,
-      hydrated: false,
-      potassium: false,
-      sodium: false,
-      magnesium: false,
-      electrolyteDrink: false,
-      lmnt: false
-    };
-    localStorage.setItem('bladeTrackToday', JSON.stringify(dailyEntry));
+    pctError.style.display = 'none';
+    dailyCal = Number(document.getElementById('dailyCal').value) || 2000;
+    mealPercents = { breakfast: b, lunch: l, dinner: d };
+    document.getElementById('breakfastTarget').textContent = Math.round(dailyCal * b/100);
+    document.getElementById('lunchTarget').textContent = Math.round(dailyCal * l/100);
+    document.getElementById('dinnerTarget').textContent = Math.round(dailyCal * d/100);
   }
+  updateMealTargets();
 
-  function saveRecovery() {
-    let dailyEntry = JSON.parse(localStorage.getItem('bladeTrackToday'));
-    if (!dailyEntry) return alert('Please log today first.');
-
-    dailyEntry.hydrated = chkWater.checked;
-    dailyEntry.potassium = chkPotassium.checked;
-    dailyEntry.sodium = chkSodium.checked;
-    dailyEntry.magnesium = chkMagnesium.checked;
-    dailyEntry.electrolyteDrink = chkElectrolyteDrink.checked;
-    dailyEntry.lmnt = chkLMNT.checked;
-
-    let log = JSON.parse(localStorage.getItem('bladeTrackLog') || '[]');
-
-    log = log.filter(entry => entry.date !== dailyEntry.date);
-    log.unshift(dailyEntry);
-
-    localStorage.setItem('bladeTrackLog', JSON.stringify(log));
-
-    recoveryChecklist.style.display = 'none';
-    calorieResult.textContent = '';
-    warning.textContent = '';
-    electrolyteAdviceDiv.textContent = '';
-    chkWater.checked = false;
-    chkPotassium.checked = false;
-    chkSodium.checked = false;
-    chkMagnesium.checked = false;
-    chkElectrolyteDrink.checked = false;
-    chkLMNT.checked = false;
-
-    displayLog();
-    alert('Day logged!');
-  }
-
-  function displayLog() {
-    const log = JSON.parse(localStorage.getItem('bladeTrackLog') || '[]');
-    const tbody = document.querySelector('#logTable tbody');
-    tbody.innerHTML = '';
-
-    if (log.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="11">No logged days yet.</td></tr>`;
-      return;
-    }
-
-    log.forEach(entry => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${entry.date}</td>
-          <td>${entry.activity === 'blade' ? 'Rollerblading' : 'Rest'}</td>
-          <td>${entry.duration || '-'}</td>
-          <td>${entry.caloriesBurned ? entry.caloriesBurned.toFixed(0) : '-'}</td>
-          <td>${entry.temp}</td>
-          <td>${entry.hydrated ? '✔️' : ''}</td>
-          <td>${entry.potassium ? '🍌' : ''}</td>
-          <td>${entry.sodium ? '🧂' : ''}</td>
-          <td>${entry.magnesium ? '🥜' : ''}</td>
-          <td>${entry.electrolyteDrink ? '🥤' : ''}</td>
-          <td>${entry.lmnt ? '⚡️' : ''}</td>
-        </tr>
+  // --- Food logging UI ---
+  function createFoodCheckboxes(containerId) {
+    const container = document.getElementById(containerId);
+    foodDB.forEach((food, i) => {
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <label>
+          <input type="checkbox" data-index="${i}" data-meal="${containerId}" />
+          ${food.name} — ${food.calories} kcal, P:${food.protein}g C:${food.carbs}g F:${food.fat}g
+        </label>
       `;
+      container.appendChild(div);
     });
   }
 
-  function clearLog() {
-    if (confirm('Are you sure you want to clear all logs?')) {
-      localStorage.removeItem('bladeTrackLog');
-      displayLog();
+  createFoodCheckboxes('breakfastFoods');
+  createFoodCheckboxes('lunchFoods');
+  createFoodCheckboxes('dinnerFoods');
+
+  function saveFoodLog() {
+    const log = {
+      date: new Date().toISOString().slice(0,10),
+      meals: { breakfast: [], lunch: [], dinner: [] },
+      totals: { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    };
+    ['breakfastFoods', 'lunchFoods', 'dinnerFoods'].forEach(mealId => {
+      const meal = mealId.replace('Foods','');
+      const checkboxes = document.querySelectorAll(`#${mealId} input[type=checkbox]`);
+      checkboxes.forEach(cb => {
+        if(cb.checked) {
+          const food = foodDB[cb.dataset.index];
+          log.meals[meal].push(food);
+          log.totals.calories += food.calories;
+          log.totals.protein += food.protein;
+          log.totals.carbs += food.carbs;
+          log.totals.fat += food.fat;
+        }
+      });
+    });
+    localStorage.setItem('bladeTrackFoodLog', JSON.stringify(log));
+    displayFoodLogSummary(log);
+    alert('Food log saved!');
+  }
+
+  function displayFoodLogSummary(log) {
+    const container = document.getElementById('foodLogSummary');
+    let html = `<h3>Today's Food Log Summary</h3>`;
+    html += `<p>Total Calories: ${log.totals.calories} kcal</p>`;
+    html += `<p>Protein: ${log.totals.protein} g, Carbs: ${log.totals.carbs} g, Fat: ${log.totals.fat} g</p>`;
+    container.innerHTML = html;
+  }
+
+  // Show saved food log on load
+  const savedFoodLog = localStorage.getItem('bladeTrackFoodLog');
+  if(savedFoodLog) {
+    displayFoodLogSummary(JSON.parse(savedFoodLog));
+  }
+
+  // --- Rollerblading GPS Tracker ---
+  let map, polyline, watchId;
+  let positions = [];
+  let startTime, endTime;
+
+  function initMap() {
+    map = L.map('map').setView([40.7359, -73.9911], 13); // Union Square NYC
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    polyline = L.polyline([], { color: 'blue' }).addTo(map);
+  }
+
+  function startTracking() {
+    if(!navigator.geolocation) {
+      alert('Geolocation not supported by your browser');
+      return;
+    }
+    positions = [];
+    polyline.setLatLngs([]);
+    startTime = new Date();
+    watchId = navigator.geolocation.watchPosition(onPosition, onError, {
+      enableHighAccuracy: true,
+      maximumAge: 1000,
+      timeout: 10000
+    });
+    document.getElementById('startTrackBtn').disabled = true;
+    document.getElementById('stopTrackBtn').disabled = false;
+    document.getElementById('sessionInfo').textContent = 'Tracking started...';
+  }
+
+  function onPosition(position) {
+    const latlng = [position.coords.latitude, position.coords.longitude];
+    positions.push(latlng);
+    polyline.addLatLng(latlng);
+    map.panTo(latlng);
+  }
+
+  function onError(err) {
+    alert('Geolocation error: ' + err.message);
+  }
+
+  function stopTracking() {
+    if(watchId) {
+      navigator.geolocation.clearWatch(watchId);
+      watchId = null;
+      endTime = new Date();
+      document.getElementById('startTrackBtn').disabled = false;
+      document.getElementById('stopTrackBtn').disabled = true;
+      calculateSession();
     }
   }
 
-  displayLog();
-  bladeInputsDiv.style.display = activitySelect.value === 'blade' ? 'block' : 'none';
+  function calculateDistance() {
+    let distance = 0;
+    for(let i=1; i<positions.length; i++) {
+      distance += getDistanceFromLatLonInMiles(positions[i-1], positions[i]);
+    }
+    return distance;
+  }
+
+  // Haversine formula to calculate miles between two lat/lon points
+  function getDistanceFromLatLonInMiles(latlng1, latlng2) {
+    const R = 3958.8; // Radius of the earth in miles
+    const dLat = deg2rad(latlng2[0]-latlng1[0]);
+    const dLon = deg2rad(latlng2[1]-latlng1[1]);
+    const a =
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(deg2rad(latlng1[0])) * Math.cos(deg2rad(latlng2[0])) *
+      Math.sin(dLon/2) * Math.sin(dLon/2)
+      ;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+  function deg2rad(deg) {
+    return deg * (Math.PI/180);
+  }
+
+  function calculateSession() {
+    if(positions.length < 2) {
+      document.getElementById('sessionInfo').textContent = 'Not enough data points tracked.';
+      return;
+    }
+    const dist = calculateDistance();
+    const durationMin = (endTime - startTime) / 60000;
+    const mph = dist / (durationMin / 60);
+
+    // Calculate calories burned based on weight and duration, MET 7.0 rollerblading
+    const weightLbs = Number(document.getElementById('dailyCal').value) || 160; // fallback weight 160 lbs
+    const weightKg = weightLbs * 0.453592;
+    const caloriesBurned = 7.0 * weightKg * (durationMin / 60);
+
+    document.getElementById('sessionInfo').textContent =
+      `Session complete: ${dist.toFixed(2)} miles, ${durationMin.toFixed(1)} minutes, Avg speed ${mph.toFixed(2)} mph, Estimated calories burned: ${caloriesBurned.toFixed(0)} kcal.`;
+
+    // Save session to localStorage
+    let sessions = JSON.parse(localStorage.getItem('bladeTrackSessions') || '[]');
+    sessions.unshift({
+      date: new Date().toISOString(),
+      distance: dist,
+      duration: durationMin,
+      avgSpeed: mph,
+      calories: caloriesBurned,
+      route: positions
+    });
+    localStorage.setItem('bladeTrackSessions', JSON.stringify(sessions));
+  }
+
+  // --- Electrolyte & Temp Advice ---
+  function getElectrolyteAdvice(tempF, isBlading, duration) {
+    if(tempF > 86 || (isBlading && duration >= 45)) {
+      return "🔥 Hot or long session.\nUse LMNT or broth for real sodium replacement.\nEat potassium-rich foods like bananas, avocado.\nDon’t trust Smartwater alone — it won’t replace lost electrolytes.\nMagnesium from nuts/seeds helps recovery.\nStay hydrated but avoid overhydration without electrolytes.";
+    }
+    if(isBlading) {
+      return "Moderate conditions.\nStay hydrated and eat potassium-rich foods (bananas, avocado).\nMagnesium-rich nuts/seeds support recovery.";
+    }
+    return "Rest day.\nMaintain hydration and balanced diet with natural electrolytes.\nConsider salty snacks or broth if you sweat indoors or in heat.";
+  }
+
+  // Show electrolyte advice based on dummy inputs for demo
+  function updateElectrolyteAdvice() {
+    const tempF = Number(document.getElementById('dailyCal').value) > 0 ? 89.6 : 70; // Placeholder
+    const isBlading = true; // For demo
+    const duration = 60; // For demo
+    document.getElementById('electrolyteText').textContent = getElectrolyteAdvice(tempF, isBlading, duration);
+  }
+  updateElectrolyteAdvice();
+
+  // Initialize Leaflet map
+  initMap();
 
 </script>
-
 </body>
 </html>
