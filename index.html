@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.25</title>
+  <title>BladeTrack Web App v1.26</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -14,7 +14,7 @@
     .checkboxes { margin: 10px 0; }
     .checkboxes label { display: block; font-size: 16px; }
     #map { height: 300px; margin: 20px 0; }
-    .food-button { display: block; width: 100%; margin: 5px 0; padding: 10px; font-size: 14px; border-radius: 5px; border: none; text-align: left; }
+    .food-button { display: block; width: 100%; margin: 5px 0; padding: 10px; font-size: 14px; border-radius: 5px; border: none; text-align: left; cursor: pointer; }
     .green { background-color: #e0f7e9; border-left: 5px solid green; }
     .yellow { background-color: #fff9e6; border-left: 5px solid orange; }
     .red { background-color: #fdecea; border-left: 5px solid red; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.25</h2>
+<h2>BladeTrack Web App v1.26</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
@@ -88,6 +88,30 @@ const foodItems = [
   { name: "Gummy worms", meal: "snack", color: "red", description: "High sugar, not filling, sugar crash risk", calories: 100, protein: 0, carbs: 25, fat: 0 },
   { name: "Candy bar", meal: "snack", color: "red", description: "High sugar and fat, not satisfying", calories: 220, protein: 2, carbs: 28, fat: 12 }
 ];
+
+function renderFoods() {
+  const mealLog = document.getElementById("mealLog");
+  const snacks = document.getElementById("snacks");
+  const mealSections = ["breakfast", "lunch", "dinner"];
+  mealSections.forEach(meal => {
+    const section = document.createElement("div");
+    section.innerHTML = `<h4>${meal.charAt(0).toUpperCase() + meal.slice(1)}</h4>`;
+    foodItems.filter(f => f.meal === meal).forEach(f => {
+      const btn = document.createElement("button");
+      btn.className = `food-button ${f.color}`;
+      btn.innerText = `${f.name} — ${f.calories} kcal\n${f.description}`;
+      section.appendChild(btn);
+    });
+    mealLog.appendChild(section);
+  });
+  foodItems.filter(f => f.meal === "snack").forEach(f => {
+    const btn = document.createElement("button");
+    btn.className = `food-button ${f.color}`;
+    btn.innerText = `${f.name} — ${f.calories} kcal\n${f.description}`;
+    snacks.appendChild(btn);
+  });
+}
+window.onload = renderFoods;
 </script>
 <script>
 function initMap() {
