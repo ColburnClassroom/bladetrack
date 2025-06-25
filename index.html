@@ -21,6 +21,9 @@
 <h2>BladeTrack Web App</h2>
 <p>Track your calories, macros, and rollerblading sessions.</p>
 
+<h3>Meal Tracking</h3>
+<div id="mealLog"></div>
+
 <p>Your weight (lbs): <input type="number" id="weight" value="150"></p>
 <button onclick="startSession()">Start Rollerblading</button>
 <button onclick="stopSession()">Stop</button>
@@ -35,14 +38,13 @@
 <div id="result"></div>
 <div id="map"></div>
 
-<h3>Food Log</h3>
+<h3>Daily Summary</h3>
 <div id="foodLog"></div>
 
 <script>
 const MET_ROLLERBLADING = 7.0;
 let startTime = null;
 
-// Hardcoded Union Square summer conditions
 const temperatureF = 89.6;
 const humidity = 70;
 document.getElementById("weather").innerText = `Union Square: ${temperatureF}°F — ${humidity}% humidity`;
@@ -103,6 +105,30 @@ const foodDB = [
   { name: "Movie Theater Popcorn (2 cups)", calories: 200, protein: 3, carbs: 18, fat: 15, meal: "dinner", guilt: "Sure, go ahead. Undo your whole workout." }
 ];
 
+function updateMealLog() {
+  const grouped = { breakfast: [], lunch: [], dinner: [] };
+  foodDB.forEach(f => grouped[f.meal].push(f));
+  const container = document.getElementById("mealLog");
+  container.innerHTML = "";
+  for (const meal in grouped) {
+    const section = document.createElement("div");
+    section.innerHTML = `<h4>${meal[0].toUpperCase() + meal.slice(1)}</h4>`;
+    grouped[meal].forEach(f => {
+      const btn = document.createElement("button");
+      btn.textContent = `${f.name} - ${f.calories} kcal`;
+      btn.style.background = f.guilt ? "#faa" : "#cfc";
+      btn.onclick = () => {
+        let log = JSON.parse(localStorage.getItem("food_log") || "[]");
+        log.push({ name: f.name, calories: f.calories });
+        localStorage.setItem("food_log", JSON.stringify(log));
+        updateFoodLog();
+      };
+      section.appendChild(btn);
+    });
+    container.appendChild(section);
+  }
+}
+
 function updateFoodLog() {
   const log = JSON.parse(localStorage.getItem("food_log") || "[]");
   let total = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
@@ -133,6 +159,7 @@ function updateFoodLog() {
   document.getElementById("foodLog").appendChild(summary);
 }
 
+updateMealLog();
 updateFoodLog();
 </script>
 </body>
