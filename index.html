@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.28</title>
+  <title>BladeTrack Web App v1.29</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.28</h2>
+<h2>BladeTrack Web App v1.29</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
@@ -68,29 +68,30 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 function logFood(food) {
-  alert(`You selected: ${food.name}\nCalories: ${food.calories} kcal\nProtein: ${food.protein}g\nCarbs: ${food.carbs}g\nFat: ${food.fat}g`);
+  let log = JSON.parse(localStorage.getItem("food_log") || "[]");
+  log.push(food);
+  localStorage.setItem("food_log", JSON.stringify(log));
+  renderFoodLog();
 }
 
-const foodItems = [
-  { name: "Banana Baby Food", calories: 100, protein: 1, carbs: 22, fat: 0, meal: "breakfast", color: "green", description: "Easy digesting carb for quick energy." },
-  { name: "Smooth Peanut Butter (1 tsp)", calories: 32, protein: 1.5, carbs: 1, fat: 3, meal: "breakfast", color: "yellow", description: "High in fat, use sparingly." },
-  { name: "Whey Protein Isolate", calories: 110, protein: 25, carbs: 1, fat: 0, meal: "breakfast", color: "green", description: "High protein, quick absorption." },
-  { name: "Whey Protein Isolate", calories: 110, protein: 25, carbs: 1, fat: 0, meal: "lunch", color: "green", description: "High protein, quick absorption." },
-  { name: "Plain Nonfat Yogurt (1 cup)", calories: 100, protein: 10, carbs: 12, fat: 0, meal: "breakfast", color: "green", description: "Low-calorie source of protein and calcium." },
-  { name: "Tofu (102.5g)", calories: 200, protein: 22, carbs: 4, fat: 12, meal: "breakfast", color: "green", description: "Good plant protein and fat source." },
-  { name: "Salmon (6 oz)", calories: 367, protein: 34, carbs: 0, fat: 23, meal: "lunch", color: "green", description: "Rich in protein and omega-3s. Very filling." },
-  { name: "Salmon (6 oz)", calories: 367, protein: 34, carbs: 0, fat: 23, meal: "dinner", color: "green", description: "Rich in protein and omega-3s. Very filling." },
-  { name: "Chicken Breast (6 oz)", calories: 276, protein: 52, carbs: 0, fat: 6, meal: "lunch", color: "green", description: "Lean protein source, very filling." },
-  { name: "Chicken Breast (6 oz)", calories: 276, protein: 52, carbs: 0, fat: 6, meal: "dinner", color: "green", description: "Lean protein source, very filling." },
-  { name: "Mixed Nuts (20 pcs total)", calories: 140, protein: 5, carbs: 5, fat: 12, meal: "breakfast", color: "yellow", description: "Pistachios, almonds, cashews, walnuts. Healthy fats." },
-  { name: "Mixed Nuts (20 pcs total)", calories: 140, protein: 5, carbs: 5, fat: 12, meal: "lunch", color: "yellow", description: "Pistachios, almonds, cashews, walnuts. Healthy fats." },
-  { name: "Mixed Nuts (20 pcs total)", calories: 140, protein: 5, carbs: 5, fat: 12, meal: "dinner", color: "yellow", description: "Pistachios, almonds, cashews, walnuts. Healthy fats." },
-  { name: "Collard Greens (1 cup)", calories: 63, protein: 5, carbs: 11, fat: 1, meal: "lunch", color: "green", description: "Leafy greens with fiber, vitamin K, calcium." },
-  { name: "Popcorn (bag)", calories: 160, protein: 2, carbs: 18, fat: 10, meal: "snack", color: "red", description: "Low sodium. Not a good electrolyte source." },
-  { name: "Potato Chips", calories: 150, protein: 2, carbs: 15, fat: 10, meal: "snack", color: "red", description: "Not a good sodium source for rehydration." },
-  { name: "Gummy Worms", calories: 140, protein: 1, carbs: 30, fat: 0, meal: "snack", color: "red", description: "Sugar high. No satiety. Not nutritious." },
-  { name: "Candy Bar", calories: 250, protein: 3, carbs: 28, fat: 12, meal: "snack", color: "red", description: "Quick sugar hit. Not filling or healthy." }
-];
+function renderFoodLog() {
+  const log = JSON.parse(localStorage.getItem("food_log") || "[]");
+  const container = document.getElementById("foodLog");
+  container.innerHTML = "";
+  let totalCals = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+  log.forEach(f => {
+    totalCals += f.calories;
+    totalProtein += f.protein;
+    totalCarbs += f.carbs;
+    totalFat += f.fat;
+    container.innerHTML += `<div>${f.name}: ${f.calories} kcal, P: ${f.protein}g, C: ${f.carbs}g, F: ${f.fat}g</div>`;
+  });
+  if (log.length) {
+    container.innerHTML += `<hr><strong>Total: ${totalCals} kcal | P: ${totalProtein}g | C: ${totalCarbs}g | F: ${totalFat}g</strong>`;
+  }
+}
+
+const foodItems = [...]; // keep foodItems array as is from v1.28
 
 function renderFoods() {
   const mealLog = document.getElementById("mealLog");
@@ -118,7 +119,10 @@ function renderFoods() {
     snacks.appendChild(btn);
   });
 }
-window.onload = renderFoods;
+window.onload = () => {
+  renderFoods();
+  renderFoodLog();
+};
 </script>
 <script>
 function initMap() {
