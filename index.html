@@ -1,166 +1,378 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    button, input, label, select { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; }
-    .hot-warning { color: orange; font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
-    th { background-color: #f9f9f9; }
-    .checkboxes { margin: 10px 0; }
-    .checkboxes label { display: block; font-size: 16px; }
-    #map { height: 300px; margin: 20px 0; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BladeTrack Web App</title>
+<style>
+  body {
+    font-family: sans-serif;
+    max-width: 720px;
+    margin: 20px auto;
+    padding: 0 10px 60px 10px;
+  }
+  h2, h3 {
+    margin-bottom: 8px;
+  }
+  label, input, select, button {
+    font-size: 16px;
+    margin: 6px 0;
+    display: block;
+    width: 100%;
+    max-width: 320px;
+  }
+  input[type=number] {
+    padding: 8px;
+  }
+  .gender-toggle button {
+    width: auto;
+    padding: 8px 16px;
+    margin-right: 10px;
+    border: 1.5px solid #666;
+    background: #eee;
+    cursor: pointer;
+  }
+  .gender-toggle button.active {
+    background: #007b00;
+    color: white;
+    border-color: #005500;
+  }
+  .meal-section {
+    margin-top: 20px;
+  }
+  .food-item {
+    margin-bottom: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .healthy {
+    background-color: #ccffcc;
+    border: 1px solid #00aa00;
+  }
+  .unhealthy {
+    background-color: #ffcccc;
+    border: 1px solid #aa0000;
+  }
+  .meal-title {
+    font-weight: bold;
+    margin-top: 12px;
+    margin-bottom: 8px;
+  }
+  #food-log-summary, #weight-progress {
+    margin-top: 24px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #f9f9f9;
+  }
+  #map {
+    height: 320px;
+    margin-top: 20px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+  }
+  .input-inline {
+    display: inline-block;
+    width: auto;
+    margin-right: 10px;
+  }
+  #weight-log-table {
+    margin-top: 10px;
+    border-collapse: collapse;
+    width: 100%;
+  }
+  #weight-log-table th, #weight-log-table td {
+    border: 1px solid #ccc;
+    padding: 6px 8px;
+    text-align: center;
+  }
+  #weight-goals {
+    margin-top: 12px;
+    font-style: italic;
+  }
+  .small-btn {
+    width: auto;
+    padding: 6px 10px;
+    margin-top: 10px;
+  }
+  .calorie-input {
+    max-width: 80px;
+  }
+</style>
 </head>
 <body>
-
 <h2>BladeTrack Web App</h2>
-<p>Track your calories, macros, and rollerblading sessions.</p>
+<p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
-<h3>Meal Tracking</h3>
-<div id="mealLog"></div>
+<section id="user-info">
+  <label for="weight">Weight (lbs):</label>
+  <input type="number" id="weight" min="50" max="600" value="175" />
+  
+  <label>Height:</label>
+  <div>
+    <input class="input-inline" type="number" id="height-feet" min="3" max="8" value="5" /> ft
+    <input class="input-inline" type="number" id="height-inches" min="0" max="11" value="10" /> in
+  </div>
+  
+  <label>Gender:</label>
+  <div class="gender-toggle" id="gender-toggle">
+    <button data-gender="male" class="active">Male</button>
+    <button data-gender="female">Female</button>
+    <button data-gender="nonbinary">Nonbinary</button>
+  </div>
+</section>
 
-<p>Your weight (lbs): <input type="number" id="weight" value="150"></p>
-<button onclick="startSession()">Start Rollerblading</button>
-<button onclick="stopSession()">Stop</button>
-<div id="weather"></div>
-<div id="warning" class="hot-warning"></div>
-<div class="checkboxes" id="checklist" style="display:none;">
-  <label><input type="checkbox" id="drankWater"> Drank water</label>
-  <label><input type="checkbox" id="ateBanana"> Ate banana</label>
-  <label><input type="checkbox" id="ateSaltyFood"> Ate salty food</label>
-  <button onclick="saveChecklist()">✔️ Save Session</button>
+<section id="goals-section">
+  <label for="calorie-goal">Daily Calorie Goal (kcal):</label>
+  <input type="number" id="calorie-goal" min="800" max="5000" value="1500" class="calorie-input" />
+  
+  <label for="weight-loss-goal">Weight Loss Goal (lbs per week):</label>
+  <input type="number" id="weight-loss-goal" min="0" max="5" step="0.1" value="2" class="calorie-input" />
+  
+  <p id="weight-goals"></p>
+  <p id="bmi-display"></p>
+</section>
+
+<hr />
+
+<div id="meal-sections">
+  <!-- Meals will appear here -->
 </div>
-<div id="result"></div>
-<div id="map"></div>
 
-<h3>Daily Summary</h3>
-<div id="foodLog"></div>
+<hr />
 
+<section id="snacks-section">
+  <h3>Snacks (Unhealthy Choices)</h3>
+  <div id="snacks-list"></div>
+</section>
+
+<hr />
+
+<section id="rollerblading-session">
+  <h3>Rollerblading Session Tracker</h3>
+  <button id="start-session-btn">Start Session</button>
+  <button id="stop-session-btn" disabled>Stop Session</button>
+  <p id="session-info"></p>
+  <div id="map"></div>
+</section>
+
+<hr />
+
+<section id="weight-tracking">
+  <h3>Weight Tracking & Progress</h3>
+  <label for="weight-input">Log Today's Weight (lbs):</label>
+  <input type="number" id="weight-input" min="50" max="600" step="0.1" />
+  <button id="log-weight-btn" class="small-btn">Log Weight</button>
+  <table id="weight-log-table">
+    <thead><tr><th>Date</th><th>Weight (lbs)</th></tr></thead>
+    <tbody id="weight-log-body"></tbody>
+  </table>
+  <canvas id="weight-progress-chart" width="700" height="300"></canvas>
+</section>
+
+<hr />
+
+<section id="food-log-summary">
+  <h3>Food Log Summary</h3>
+  <div id="food-summary-details"></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY"></script>
 <script>
-const MET_ROLLERBLADING = 7.0;
-let startTime = null;
+(() => {
+  // User info & goals
+  const weightInput = document.getElementById('weight');
+  const heightFeetInput = document.getElementById('height-feet');
+  const heightInchesInput = document.getElementById('height-inches');
+  const genderToggle = document.getElementById('gender-toggle');
+  const calorieGoalInput = document.getElementById('calorie-goal');
+  const weightLossGoalInput = document.getElementById('weight-loss-goal');
+  const weightGoalsText = document.getElementById('weight-goals');
+  const bmiDisplay = document.getElementById('bmi-display');
 
-const temperatureF = 89.6;
-const humidity = 70;
-document.getElementById("weather").innerText = `Union Square: ${temperatureF}°F — ${humidity}% humidity`;
-if (temperatureF > 86) {
-  document.getElementById("warning").innerText = "🔥 It’s hot! Drink water and eat potassium-rich foods like bananas.";
-}
+  let selectedGender = 'male';
 
-function startSession() {
-  const weightInput = document.getElementById("weight").value;
-  if (!weightInput || isNaN(weightInput) || weightInput <= 0) {
-    alert("Enter your weight in pounds.");
-    return;
-  }
-  startTime = Date.now();
-  document.getElementById("result").innerText = "Session started...";
-}
-
-function stopSession() {
-  if (!startTime) return;
-  const durationMin = (Date.now() - startTime) / 60000;
-  const weightLbs = parseFloat(document.getElementById("weight").value);
-  const weightKg = weightLbs * 0.4536;
-  const tempMod = temperatureF > 86 ? 1.15 : 1;
-  const kcal = MET_ROLLERBLADING * weightKg * (durationMin / 60) * tempMod;
-  const date = new Date().toLocaleString();
-  const entry = {
-    date, duration: durationMin.toFixed(1), calories: Math.round(kcal), temperature: temperatureF,
-    water: false, banana: false, salty: false
+  // Food DB with macros (protein, carbs, fat in grams)
+  // Healthy: green background; unhealthy: red background
+  const foods = {
+    breakfast: [
+      { name: "Plain Nonfat Yogurt (6 oz)", calories: 90, protein: 9, carbs: 12, fat: 0, healthy: true },
+      { name: "Banana Baby Food (1 container)", calories: 100, protein: 1, carbs: 22, fat: 0, healthy: true },
+      { name: "Peanut Butter, Unsalted (1 tsp)", calories: 32, protein: 1.5, carbs: 1, fat: 3, healthy: true },
+      { name: "Tofu (102.5g / half pack)", calories: 200, protein: 20, carbs: 4, fat: 12, healthy: true },
+      { name: "Whey Protein Isolate (1 scoop)", calories: 110, protein: 25, carbs: 1, fat: 0.5, healthy: true },
+      { name: "Mixed Nuts (5 each: pistachios, almonds, cashews, walnuts)", calories: 230, protein: 7, carbs: 9, fat: 19, healthy: true }
+    ],
+    lunch: [
+      { name: "Salmon (6 oz)", calories: 350, protein: 34, carbs: 0, fat: 22, healthy: true },
+      { name: "Chicken Breast (6 oz)", calories: 280, protein: 53, carbs: 0, fat: 6, healthy: true },
+      { name: "Mixed Greens Salad (1 bowl)", calories: 35, protein: 2, carbs: 5, fat: 0, healthy: true },
+      { name: "Mixed Nuts (5 each: pistachios, almonds, cashews, walnuts)", calories: 230, protein: 7, carbs: 9, fat: 19, healthy: true }
+    ],
+    dinner: [
+      { name: "Salmon (6 oz)", calories: 350, protein: 34, carbs: 0, fat: 22, healthy: true },
+      { name: "Chicken Breast (6 oz)", calories: 280, protein: 53, carbs: 0, fat: 6, healthy: true },
+      { name: "Mixed Greens Salad (1 bowl)", calories: 35, protein: 2, carbs: 5, fat: 0, healthy: true },
+      { name: "Mixed Nuts (5 each: pistachios, almonds, cashews, walnuts)", calories: 230, protein: 7, carbs: 9, fat: 19, healthy: true }
+    ],
+    snacks: [
+      { name: "Chips (1 small bag)", calories: 150, protein: 2, carbs: 15, fat: 10, healthy: false, guilt: "Really? This is what we're doing?" },
+      { name: "Movie Theater Popcorn (2 cups)", calories: 200, protein: 3, carbs: 18, fat: 15, healthy: false, guilt: "Sure, go ahead. Undo your whole workout." },
+      { name: "Gummy Worms (1 small pack)", calories: 140, protein: 0, carbs: 35, fat: 0, healthy: false, guilt: "Sweet tooth alert! Think twice." }
+    ]
   };
-  localStorage.setItem("current_session", JSON.stringify(entry));
-  document.getElementById("checklist").style.display = "block";
-  document.getElementById("result").innerText = `Duration: ${entry.duration} minutes\nCalories burned: ${entry.calories}`;
-  startTime = null;
-}
 
-function saveChecklist() {
-  let entry = JSON.parse(localStorage.getItem("current_session"));
-  if (!entry) return;
-  entry.water = document.getElementById("drankWater").checked;
-  entry.banana = document.getElementById("ateBanana").checked;
-  entry.salty = document.getElementById("ateSaltyFood").checked;
-  let log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
-  log.unshift(entry);
-  localStorage.setItem("blade_sessions", JSON.stringify(log));
-  localStorage.removeItem("current_session");
-  document.getElementById("checklist").style.display = "none";
-}
+  // Meal logs: store selected foods per meal
+  let mealLogs = {
+    breakfast: [],
+    lunch: [],
+    snacks: [],
+    dinner: []
+  };
 
-const foodDB = [
-  { name: "Plain Nonfat Yogurt (6 oz)", calories: 90, protein: 9, carbs: 12, fat: 0, meal: "breakfast" },
-  { name: "Banana Baby Food (1 container)", calories: 100, protein: 1, carbs: 22, fat: 0, meal: "breakfast" },
-  { name: "Peanut Butter, Unsalted (1 tsp)", calories: 32, protein: 1.5, carbs: 1, fat: 3, meal: "breakfast" },
-  { name: "Tofu (102.5g / half pack)", calories: 200, protein: 20, carbs: 4, fat: 12, meal: "lunch" },
-  { name: "Salmon (6 oz)", calories: 350, protein: 34, carbs: 0, fat: 22, meal: "lunch" },
-  { name: "Mixed Greens Salad (1 bowl)", calories: 35, protein: 2, carbs: 5, fat: 0, meal: "lunch" },
-  { name: "Whey Protein Isolate (1 scoop)", calories: 110, protein: 25, carbs: 1, fat: 0.5, meal: "dinner" },
-  { name: "Chips (1 small bag)", calories: 150, protein: 2, carbs: 15, fat: 10, meal: "dinner", guilt: "Really? This is what we're doing?" },
-  { name: "Movie Theater Popcorn (2 cups)", calories: 200, protein: 3, carbs: 18, fat: 15, meal: "dinner", guilt: "Sure, go ahead. Undo your whole workout." }
-];
+  // Weight log stored as array of {date, weight}
+  let weightLog = JSON.parse(localStorage.getItem('weightLog') || '[]');
 
-function updateMealLog() {
-  const grouped = { breakfast: [], lunch: [], dinner: [] };
-  foodDB.forEach(f => grouped[f.meal].push(f));
-  const container = document.getElementById("mealLog");
-  container.innerHTML = "";
-  for (const meal in grouped) {
-    const section = document.createElement("div");
-    section.innerHTML = `<h4>${meal[0].toUpperCase() + meal.slice(1)}</h4>`;
-    grouped[meal].forEach(f => {
-      const btn = document.createElement("button");
-      btn.textContent = `${f.name} - ${f.calories} kcal`;
-      btn.style.background = f.guilt ? "#faa" : "#cfc";
-      btn.onclick = () => {
-        let log = JSON.parse(localStorage.getItem("food_log") || "[]");
-        log.push({ name: f.name, calories: f.calories });
-        localStorage.setItem("food_log", JSON.stringify(log));
-        updateFoodLog();
-      };
-      section.appendChild(btn);
+  // Rollerblading session vars
+  let map, sessionPath, sessionMarkers = [], sessionStartTime = null, watchId = null;
+  let totalDistanceMeters = 0;
+
+  // Initialize map centered on NYC Union Square
+  function initMap() {
+    const unionSquare = { lat: 40.7359, lng: -73.9911 };
+    map = new google.maps.Map(document.getElementById("map"), {
+      zoom: 14,
+      center: unionSquare,
+      mapTypeId: 'roadmap'
     });
-    container.appendChild(section);
+    sessionPath = new google.maps.Polyline({
+      path: [],
+      geodesic: true,
+      strokeColor: '#FF0000',
+      strokeOpacity: 1.0,
+      strokeWeight: 3
+    });
+    sessionPath.setMap(map);
   }
-}
 
-function updateFoodLog() {
-  const log = JSON.parse(localStorage.getItem("food_log") || "[]");
-  let total = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
-  log.forEach(item => {
-    const dbItem = foodDB.find(f => f.name === item.name);
-    total += item.calories;
-    if (dbItem) {
-      totalProtein += dbItem.protein || 0;
-      totalCarbs += dbItem.carbs || 0;
-      totalFat += dbItem.fat || 0;
+  // Calculate distance in meters between two LatLng points
+  function haversineDistance(latLng1, latLng2) {
+    function toRad(x) { return x * Math.PI / 180; }
+    const R = 6371000; // meters
+    const dLat = toRad(latLng2.lat() - latLng1.lat());
+    const dLon = toRad(latLng2.lng() - latLng1.lng());
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(toRad(latLng1.lat())) * Math.cos(toRad(latLng2.lat())) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
+  // Start rollerblading session tracking
+  document.getElementById('start-session-btn').onclick = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation not supported by your browser.");
+      return;
     }
+    if (watchId !== null) {
+      alert("Session already in progress.");
+      return;
+    }
+    sessionStartTime = new Date();
+    totalDistanceMeters = 0;
+    sessionPath.setPath([]);
+    sessionMarkers.forEach(m => m.setMap(null));
+    sessionMarkers = [];
+    map.setZoom(15);
+
+    watchId = navigator.geolocation.watchPosition(pos => {
+      const latLng = new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+      let path = sessionPath.getPath();
+      if (path.getLength() > 0) {
+        const lastPoint = path.getAt(path.getLength() - 1);
+        totalDistanceMeters += haversineDistance(lastPoint, latLng);
+      }
+      path.push(latLng);
+      const marker = new google.maps.Marker({ position: latLng, map });
+      sessionMarkers.push(marker);
+      document.getElementById('session-info').innerText = `Tracking... Distance: ${(totalDistanceMeters/1609.34).toFixed(2)} miles`;
+    }, err => {
+      alert("Error getting location: " + err.message);
+    }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
+
+    document.getElementById('start-session-btn').disabled = true;
+    document.getElementById('stop-session-btn').disabled = false;
+    document.getElementById('session-info').innerText = "Session started. Waiting for location...";
+  };
+
+  // Stop rollerblading session
+  document.getElementById('stop-session-btn').onclick = () => {
+    if (watchId === null) return;
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+    const sessionEndTime = new Date();
+    const durationMinutes = (sessionEndTime - sessionStartTime) / 60000;
+    const distanceMiles = totalDistanceMeters / 1609.34;
+    const speedMph = distanceMiles / (durationMinutes / 60);
+
+    // Calculate calories burned (MET 7 for rollerblading)
+    const weightLbs = parseFloat(weightInput.value) || 175;
+    const weightKg = weightLbs * 0.4536;
+    const met = 7;
+    const caloriesBurned = met * weightKg * (durationMinutes / 60);
+
+    // Save session to localStorage
+    let sessions = JSON.parse(localStorage.getItem('bladeSessions') || '[]');
+    sessions.unshift({
+      date: sessionStartTime.toLocaleString(),
+      durationMinutes: durationMinutes.toFixed(1),
+      distanceMiles: distanceMiles.toFixed(2),
+      speedMph: speedMph.toFixed(2),
+      caloriesBurned: Math.round(caloriesBurned)
+    });
+    localStorage.setItem('bladeSessions', JSON.stringify(sessions));
+
+    document.getElementById('session-info').innerText = `Session ended. Duration: ${durationMinutes.toFixed(1)} min, Distance: ${distanceMiles.toFixed(2)} miles, Speed: ${speedMph.toFixed(2)} mph, Calories: ${Math.round(caloriesBurned)}`;
+
+    document.getElementById('start-session-btn').disabled = false;
+    document.getElementById('stop-session-btn').disabled = true;
+  };
+
+  // Gender toggle buttons
+  genderToggle.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      genderToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedGender = btn.getAttribute('data-gender');
+      updateGoalsAndBMI();
+    });
   });
-  const macroTotal = totalProtein * 4 + totalCarbs * 4 + totalFat * 9;
-  const proteinPct = ((totalProtein * 4) / macroTotal * 100).toFixed(1);
-  const carbsPct = ((totalCarbs * 4) / macroTotal * 100).toFixed(1);
-  const fatPct = ((totalFat * 9) / macroTotal * 100).toFixed(1);
 
-  const summary = document.createElement("div");
-  summary.innerHTML = `
-    <p>Total food calories today: ${total} kcal</p>
-    <p>Macronutrient breakdown:</p>
-    <ul>
-      <li>Protein: ${totalProtein}g (${proteinPct}%)</li>
-      <li>Carbs: ${totalCarbs}g (${carbsPct}%)</li>
-      <li>Fat: ${totalFat}g (${fatPct}%)</li>
-    </ul>`;
-  document.getElementById("foodLog").innerHTML = "";
-  document.getElementById("foodLog").appendChild(summary);
-}
-
-updateMealLog();
-updateFoodLog();
-</script>
-</body>
-</html>
+  // Update goals and BMI display
+  function updateGoalsAndBMI() {
+    const weight = parseFloat(weightInput.value);
+    const feet = parseInt(heightFeetInput.value);
+    const inches = parseInt(heightInchesInput.value);
+    if (!weight || !feet || inches === undefined) {
+      weightGoalsText.textContent = '';
+      bmiDisplay.textContent = '';
+      return;
+    }
+    const heightInchesTotal = feet * 12 + inches;
+    // BMI = (lbs / (inches^2)) * 703
+    const bmi = (weight / (heightInchesTotal * heightInchesTotal)) * 703;
+    bmiDisplay.textContent = `BMI: ${bmi.toFixed(1)}`;
+    
+    // Estimate calorie maintenance (Mifflin-St Jeor)
+    let bmr;
+    if (selectedGender === 'male') {
+      bmr = 10 * (weight * 0.4536) + 6.25 * (heightInchesTotal * 2.54) - 5 * 30 + 5;
+    } else if (selectedGender === 'female') {
+      bmr = 10 * (weight * 0.4536) + 6.25 * (heightInchesTotal * 2.54) - 5 * 30 - 161;
+    } else {
+      // Nonbinary: average male/female
+      const bmrMale = 10 * (weight * 0.4536) + 6.25 * (heightInchesTotal * 2.54) - 5 * 30 + 5;
+      const bmrFemale = 10 * (weight * 0.4536) + 6.25 * (heightInchesTotal * 2.54) - 5 * 30 - 161;
+      bmr = (bmr
