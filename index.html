@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BladeTrack Web App v1.46</title>
+<title>BladeTrack Web App v1.47</title>
 <style>
   body { font-family: sans-serif; max-width: 700px; margin: 20px auto; padding: 20px; }
-  h2, h3, h4 { margin-bottom: 5px; }
+  h2,h3,h4 { margin-bottom: 5px; }
   p { margin: 5px 0 15px; }
   label { font-weight: bold; }
   input[type=number], input[type=time], select { padding: 6px; font-size: 14px; margin-left: 8px; width: 60px; }
@@ -27,12 +27,36 @@
   th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
   th { background-color: #f9f9f9; }
   #weight-progress-chart { margin-top: 10px; }
+  .error { color: red; font-weight: bold; }
+  .progress-bar {
+    background-color: #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+    height: 14px;
+    margin-top: 4px;
+  }
+  .progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+  .progress-green { background-color: #4caf50; }
+  .progress-orange { background-color: #ff9800; }
+  .progress-red { background-color: #f44336; }
+  button.small-btn {
+    font-size: 12px; padding: 6px 10px; margin-left: 10px; cursor: pointer;
+  }
+  #electrolyteAdvice {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #fff4e5;
+    border-left: 5px solid orange;
+  }
 </style>
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.46</h2>
-<p>Track your calories, macros, rollerblading, and weight loss progress.</p>
+<h2>BladeTrack Web App v1.47</h2>
+<p>Track calories, macros, rollerblading, weight loss, and electrolytes smartly.</p>
 
 <div>
   <label>Weight (lbs):</label>
@@ -61,12 +85,12 @@
 </div>
 
 <div>
-  <label>Calorie % by Meal:</label>
+  <label>Calorie % by Meal (must total 100%):</label><br />
   Breakfast <input type="number" id="pctBreakfast" value="25" min="0" max="100" style="width:50px" />%
   Lunch <input type="number" id="pctLunch" value="40" min="0" max="100" style="width:50px" />%
   Snacks <input type="number" id="pctSnacks" value="10" min="0" max="100" style="width:50px" />%
-  Dinner <input type="number" id="pctDinner" value="25" min="0" max="100" style="width:50px" />%
-  <small>(Total must be 100%)</small>
+  Dinner <input type="number" id="pctDinner" value="25" min="0" max="100" style="width:50px" />
+  <span id="pctError" class="error"></span>
 </div>
 
 <hr />
@@ -76,28 +100,28 @@
 <div id="mealTracking">
 
   <div class="meal-section" id="breakfastSection">
-    <h4>Breakfast</h4>
+    <h4>Breakfast <span id="breakfastTargetCal"></span></h4>
     <div id="breakfastFoods"></div>
     <div id="breakfastLog"></div>
     <div id="breakfastTotals"></div>
   </div>
 
   <div class="meal-section" id="lunchSection">
-    <h4>Lunch</h4>
+    <h4>Lunch <span id="lunchTargetCal"></span></h4>
     <div id="lunchFoods"></div>
     <div id="lunchLog"></div>
     <div id="lunchTotals"></div>
   </div>
 
   <div class="meal-section" id="snacksSection">
-    <h4>Snacks (Unhealthy Choices)</h4>
+    <h4>Snacks (Unhealthy Choices) <span id="snacksTargetCal"></span></h4>
     <div id="snacksFoods"></div>
     <div id="snacksLog"></div>
     <div id="snacksTotals"></div>
   </div>
 
   <div class="meal-section" id="dinnerSection">
-    <h4>Dinner</h4>
+    <h4>Dinner <span id="dinnerTargetCal"></span></h4>
     <div id="dinnerFoods"></div>
     <div id="dinnerLog"></div>
     <div id="dinnerTotals"></div>
@@ -113,11 +137,14 @@
   End time: <input type="time" id="bladeEnd" />
   Distance (miles): <input type="number" id="bladeMiles" step="0.1" min="0" />
   <button onclick="calculateBladeCalories()">Calculate Calories Burned</button>
+  <button class="small-btn" onclick="undoLastPoint()">Undo Last Point</button>
+  <button class="small-btn" onclick="resetPath()">Reset Path</button>
 </p>
 <div id="bladeResult"></div>
 
 <div id="weather"></div>
 <div id="warning" class="hot-warning"></div>
+<div id="electrolyteAdvice"></div>
 
 <div id="map"></div>
 
@@ -142,6 +169,8 @@
 
 <script>
 "use strict";
+
+// ---- Data setup ----
 
 const foods = {
   breakfast: [
@@ -203,115 +232,220 @@ let selectedFoods = {
   dinner: new Set()
 };
 
+let bladeCalories = 0;
+let weightLog = [];
+let pathCoords = [];
+
+const electrolyteSupplements = {
+  LMNT: { sodium: 1000, potassium: 200, magnesium: 60, sugar: 0, warning: null },
+  SmartWater: { sodium: 10, potassium: 0, magnesium: 0, sugar: 0, warning: "Too low in electrolytes for heavy sweating." },
+  Gatorade: { sodium: 160, potassium: 45, magnesium: 0, sugar: 34, warning: "Contains sugars; not ideal unless heavy sweating." },
+  Propel: { sodium: 160, potassium: 0, magnesium: 0, sugar: 0, warning: "Low potassium; not ideal unless heavy sweating." },
+  Others: { sodium: 50, potassium: 10, magnesium: 10, sugar: 10, warning: "Check labels; some contain excessive sugars or additives." }
+};
+
+// Helper: save/load state for localStorage persistence
+
+function saveState() {
+  localStorage.setItem("bladetrack_selectedFoods", JSON.stringify({
+    breakfast: Array.from(selectedFoods.breakfast),
+    lunch: Array.from(selectedFoods.lunch),
+    snacks: Array.from(selectedFoods.snacks),
+    dinner: Array.from(selectedFoods.dinner)
+  }));
+  localStorage.setItem("bladetrack_bladeCalories", bladeCalories);
+  localStorage.setItem("bladetrack_weightLog", JSON.stringify(weightLog));
+  localStorage.setItem("bladetrack_pathCoords", JSON.stringify(pathCoords.map(p => ({ lat: p.lat(), lng: p.lng() }))));
+  localStorage.setItem("bladetrack_pct", JSON.stringify({
+    breakfast: parseInt(document.getElementById("pctBreakfast").value) || 0,
+    lunch: parseInt(document.getElementById("pctLunch").value) || 0,
+    snacks: parseInt(document.getElementById("pctSnacks").value) || 0,
+    dinner: parseInt(document.getElementById("pctDinner").value) || 0
+  }));
+  localStorage.setItem("bladetrack_calorieGoal", parseInt(document.getElementById("calorieGoal").value) || 1500);
+}
+
+function loadState() {
+  try {
+    const foodsState = JSON.parse(localStorage.getItem("bladetrack_selectedFoods"));
+    if (foodsState) {
+      selectedFoods.breakfast = new Set(foodsState.breakfast || []);
+      selectedFoods.lunch = new Set(foodsState.lunch || []);
+      selectedFoods.snacks = new Set(foodsState.snacks || []);
+      selectedFoods.dinner = new Set(foodsState.dinner || []);
+    }
+    bladeCalories = parseFloat(localStorage.getItem("bladetrack_bladeCalories")) || 0;
+    weightLog = JSON.parse(localStorage.getItem("bladetrack_weightLog")) || [];
+    const coords = JSON.parse(localStorage.getItem("bladetrack_pathCoords")) || [];
+    pathCoords = coords.map(c => new google.maps.LatLng(c.lat, c.lng));
+    const pct = JSON.parse(localStorage.getItem("bladetrack_pct"));
+    if (pct) {
+      document.getElementById("pctBreakfast").value = pct.breakfast;
+      document.getElementById("pctLunch").value = pct.lunch;
+      document.getElementById("pctSnacks").value = pct.snacks;
+      document.getElementById("pctDinner").value = pct.dinner;
+    }
+    const cGoal = parseInt(localStorage.getItem("bladetrack_calorieGoal"));
+    if (cGoal) document.getElementById("calorieGoal").value = cGoal;
+  } catch(e) {
+    console.warn("Failed to load state:", e);
+  }
+}
+
+// --- Render UI functions
+
+function createFoodButton(meal, food) {
+  const btn = document.createElement("button");
+  btn.textContent = `${food.name} (${food.cals} kcal)`;
+  btn.className = `food-button ${food.color}`;
+  if (selectedFoods[meal].has(food.id)) {
+    btn.classList.add("selected");
+  }
+  btn.onclick = () => {
+    if (selectedFoods[meal].has(food.id)) {
+      selectedFoods[meal].delete(food.id);
+    } else {
+      selectedFoods[meal].add(food.id);
+    }
+    saveState();
+    renderMealLog(meal);
+    updateTotals();
+  };
+  // Add tooltip with benefit or warning
+  btn.title = food.benefit ? `Benefit: ${food.benefit}` : (food.warning ? `Warning: ${food.warning}` : "");
+  return btn;
+}
+
 function renderFoodButtons() {
-  for (const meal of ["breakfast", "lunch", "snacks", "dinner"]) {
-    const container = document.getElementById(meal + "Foods");
+  // Clear all first
+  ["breakfast", "lunch", "snacks", "dinner"].forEach(meal => {
+    const container = document.getElementById(`${meal}Foods`);
     container.innerHTML = "";
     foods[meal].forEach(food => {
-      const btn = document.createElement("button");
-      btn.textContent = `${food.name} - ${food.cals} kcal`;
-      btn.className = `food-button ${food.color}`;
-      btn.onclick = () => toggleFood(meal, food.id);
-      container.appendChild(btn);
+      container.appendChild(createFoodButton(meal, food));
     });
-  }
+  });
 }
 
-function toggleFood(meal, foodId) {
-  if (selectedFoods[meal].has(foodId)) {
-    selectedFoods[meal].delete(foodId);
-  } else {
-    selectedFoods[meal].add(foodId);
-  }
-  updateMealLog(meal);
-  updateTotals();
-}
-
-function updateMealLog(meal) {
-  const logDiv = document.getElementById(meal + "Log");
-  logDiv.innerHTML = "";
+function renderMealLog(meal) {
+  const logDiv = document.getElementById(`${meal}Log`);
   if (selectedFoods[meal].size === 0) {
-    logDiv.textContent = "No foods selected.";
-    document.getElementById(meal + "Totals").textContent = "";
+    logDiv.textContent = "No items selected.";
+    document.getElementById(`${meal}Totals`).textContent = "";
     return;
   }
-
-  const list = document.createElement("ul");
+  // Compose log with calories and macros summary
   let totalCals = 0, totalP = 0, totalC = 0, totalF = 0;
-  selectedFoods[meal].forEach(fid => {
-    const food = foods[meal].find(f => f.id === fid);
+  let html = `<table><thead><tr><th>Food</th><th>Calories</th><th>Protein (g)</th><th>Carbs (g)</th><th>Fat (g)</th><th>Info</th></tr></thead><tbody>`;
+  selectedFoods[meal].forEach(id => {
+    const food = foods[meal].find(f => f.id === id) || foods.snacks.find(f => f.id === id) || foods.breakfast.find(f => f.id === id) || foods.lunch.find(f => f.id === id) || foods.dinner.find(f => f.id === id);
     if (!food) return;
     totalCals += food.cals;
     totalP += food.protein;
     totalC += food.carbs;
     totalF += food.fat;
-
-    const li = document.createElement("li");
-    li.textContent = `${food.name} — ${food.cals} kcal (P:${food.protein}g C:${food.carbs}g F:${food.fat}g)`;
-    // Show benefit or warning
-    if (food.benefit) {
-      const span = document.createElement("span");
-      span.style.color = "green";
-      span.textContent = " — " + food.benefit;
-      li.appendChild(span);
-    }
-    if (food.warning) {
-      const span = document.createElement("span");
-      span.style.color = "red";
-      span.textContent = " — " + food.warning;
-      li.appendChild(span);
-    }
-    list.appendChild(li);
+    html += `<tr><td>${food.name}</td><td>${food.cals}</td><td>${food.protein}</td><td>${food.carbs}</td><td>${food.fat}</td><td>${food.benefit ? food.benefit : (food.warning ? food.warning : "")}</td></tr>`;
   });
-  logDiv.appendChild(list);
+  html += `</tbody></table>`;
+  logDiv.innerHTML = html;
+  // Update totals below log
+  document.getElementById(`${meal}Totals`).innerHTML =
+    `<strong>Meal Total:</strong> ${totalCals} kcal, Protein: ${totalP.toFixed(1)}g, Carbs: ${totalC.toFixed(1)}g, Fat: ${totalF.toFixed(1)}g`;
+}
 
-  // Macronutrient % for the meal
-  const totalMacros = totalP + totalC + totalF;
-  const proteinPct = totalMacros ? ((totalP * 4) / (totalCals || 1) * 100).toFixed(1) : "0";
-  const carbsPct = totalMacros ? ((totalC * 4) / (totalCals || 1) * 100).toFixed(1) : "0";
-  const fatPct = totalMacros ? ((totalF * 9) / (totalCals || 1) * 100).toFixed(1) : "0";
+function validatePctTotal() {
+  const b = parseInt(document.getElementById("pctBreakfast").value) || 0;
+  const l = parseInt(document.getElementById("pctLunch").value) || 0;
+  const s = parseInt(document.getElementById("pctSnacks").value) || 0;
+  const d = parseInt(document.getElementById("pctDinner").value) || 0;
+  const total = b + l + s + d;
+  const errorSpan = document.getElementById("pctError");
+  if (total !== 100) {
+    errorSpan.textContent = `Total is ${total}%, must be exactly 100%.`;
+    return false;
+  } else {
+    errorSpan.textContent = "";
+    return true;
+  }
+}
 
-  document.getElementById(meal + "Totals").innerHTML =
-    `<strong>${meal.charAt(0).toUpperCase() + meal.slice(1)} Total:</strong> ${totalCals} kcal` +
-    `<br>Protein: ${totalP}g, Carbs: ${totalC}g, Fat: ${totalF}g` +
-    `<br>Protein %: ${proteinPct}%, Carbs %: ${carbsPct}%, Fat %: ${fatPct}%`;
+function updateMealTargets() {
+  if (!validatePctTotal()) {
+    // Clear targets if invalid
+    ["breakfast", "lunch", "snacks", "dinner"].forEach(m => {
+      document.getElementById(`${m}TargetCal`).textContent = "";
+    });
+    return;
+  }
+  const goal = parseInt(document.getElementById("calorieGoal").value) || 1500;
+  const b = parseInt(document.getElementById("pctBreakfast").value);
+  const l = parseInt(document.getElementById("pctLunch").value);
+  const s = parseInt(document.getElementById("pctSnacks").value);
+  const d = parseInt(document.getElementById("pctDinner").value);
+
+  document.getElementById("breakfastTargetCal").textContent = `(Target: ${Math.round(goal * b / 100)} kcal)`;
+  document.getElementById("lunchTargetCal").textContent = `(Target: ${Math.round(goal * l / 100)} kcal)`;
+  document.getElementById("snacksTargetCal").textContent = `(Target: ${Math.round(goal * s / 100)} kcal)`;
+  document.getElementById("dinnerTargetCal").textContent = `(Target: ${Math.round(goal * d / 100)} kcal)`;
 }
 
 function updateTotals() {
+  updateMealTargets();
+
+  // Calculate per meal totals and day totals
   let dayCals = 0, dayP = 0, dayC = 0, dayF = 0;
-  for (const meal of Object.keys(selectedFoods)) {
-    selectedFoods[meal].forEach(fid => {
-      const food = foods[meal].find(f => f.id === fid);
+
+  ["breakfast", "lunch", "snacks", "dinner"].forEach(meal => {
+    let mealC = 0, mealP = 0, mealCbs = 0, mealF = 0;
+    selectedFoods[meal].forEach(id => {
+      const food = foods[meal].find(f => f.id === id) || foods.snacks.find(f => f.id === id) || foods.breakfast.find(f => f.id === id) || foods.lunch.find(f => f.id === id) || foods.dinner.find(f => f.id === id);
       if (!food) return;
-      dayCals += food.cals;
-      dayP += food.protein;
-      dayC += food.carbs;
-      dayF += food.fat;
+      mealC += food.cals;
+      mealP += food.protein;
+      mealCbs += food.carbs;
+      mealF += food.fat;
     });
-  }
-  // Subtract calories burned by rollerblading
-  const caloriesBurned = bladeCalories || 0;
-  const baseGoal = parseFloat(document.getElementById("calorieGoal").value) || 1500;
-  const adjustedGoal = baseGoal - caloriesBurned;
+    dayCals += mealC;
+    dayP += mealP;
+    dayC += mealCbs;
+    dayF += mealF;
+    // Update progress bars for meal calorie compliance:
+    if (validatePctTotal()) {
+      const goal = parseInt(document.getElementById("calorieGoal").value) || 1500;
+      const pct = parseInt(document.getElementById(`pct${capitalize(meal)}`).value);
+      const targetCal = goal * pct / 100;
+      const percentOfTarget = Math.min(100, (mealC / targetCal) * 100);
+      const progressDivId = `${meal}Totals`;
+      const progressDiv = document.getElementById(progressDivId);
+      let colorClass = "progress-green";
+      if (percentOfTarget > 110) colorClass = "progress-red";
+      else if (percentOfTarget > 90) colorClass = "progress-orange";
 
-  // Update daily summary
+      progressDiv.innerHTML = `
+        <strong>Meal Total:</strong> ${mealC} kcal, Protein: ${mealP.toFixed(1)}g, Carbs: ${mealCbs.toFixed(1)}g, Fat: ${mealF.toFixed(1)}g
+        <div class="progress-bar"><div class="progress-fill ${colorClass}" style="width:${percentOfTarget}%"></div></div>
+      `;
+    }
+  });
+
+  // Subtract rollerblading calories burned from daily total calories
+  const baseGoal = parseInt(document.getElementById("calorieGoal").value) || 1500;
+  const adjustedGoal = Math.max(0, baseGoal - bladeCalories);
+
+  // Day totals display
   const dayTotalsDiv = document.getElementById("dayTotals");
-  dayTotalsDiv.innerHTML = `<strong>Daily Food Calories:</strong> ${dayCals} kcal<br>` +
-    `<strong>Calories Burned by Rollerblading:</strong> ${Math.round(caloriesBurned)} kcal<br>` +
-    `<strong>Net Calories (Food - Burned):</strong> ${Math.round(dayCals - caloriesBurned)} kcal<br>` +
-    `<strong>Calorie Goal:</strong> ${baseGoal} kcal<br>` +
-    `<strong>Adjusted Goal (after skating):</strong> ${Math.round(adjustedGoal)} kcal<br>` +
-    `<br><strong>Macros Total:</strong> Protein: ${dayP}g, Carbs: ${dayC}g, Fat: ${dayF}g`;
+  dayTotalsDiv.innerHTML =
+    `<strong>Calories Consumed:</strong> ${dayCals} kcal<br>` +
+    `<strong>Calories Burned (Rollerblading):</strong> ${Math.round(bladeCalories)} kcal<br>` +
+    `<strong>Adjusted Daily Calorie Goal:</strong> ${Math.round(adjustedGoal)} kcal<br>` +
+    `<br><strong>Macros Total:</strong> Protein: ${dayP.toFixed(1)}g, Carbs: ${dayC.toFixed(1)}g, Fat: ${dayF.toFixed(1)}g`;
 
-  // Highlight calorie goal compliance
-  if (dayCals > adjustedGoal) {
-    dayTotalsDiv.style.color = "red";
-  } else {
-    dayTotalsDiv.style.color = "green";
-  }
+  dayTotalsDiv.style.color = dayCals > adjustedGoal ? "red" : "green";
+
+  saveState();
 }
 
-let bladeCalories = 0;
+// Rollerblading calories calc
 function calculateBladeCalories() {
   const weight = parseFloat(document.getElementById("weight").value) || 175;
   const miles = parseFloat(document.getElementById("bladeMiles").value) || 0;
@@ -324,7 +458,7 @@ function calculateBladeCalories() {
     duration = (eh * 60 + em - (sh * 60 + sm)) / 60;
     if (duration < 0) duration = 0;
   }
-  const met = 7.0; // Moderate effort rollerblading
+  const met = 7.0; // Moderate rollerblading
   const weightKg = weight * 0.453592;
   const hours = duration || (miles / 9) || 0;
   bladeCalories = met * weightKg * hours;
@@ -333,27 +467,16 @@ function calculateBladeCalories() {
   updateTotals();
 }
 
-// NYC weather and electrolyte guidance
-const temperatureF = 89;
-const humidity = 65;
-document.getElementById("weather").innerText = `Union Square, NYC: ${temperatureF}°F — ${humidity}% humidity.`;
-if (temperatureF > 86) {
-  document.getElementById("warning").innerText =
-    "🔥 It's hot! Rehydrate with LMNT or potassium-rich foods (bananas, avocados). Avoid SmartWater — too low in electrolytes. " +
-    "Gatorade and Propel also underdeliver unless heavily sweating. Avoid electrolyte supplements with excessive additives or sugars.";
+// Weight log/chart
+let weightChart, weightCtx;
+function setupWeightChart() {
+  weightCtx = document.getElementById("weight-progress-chart").getContext("2d");
+  weightChart = new Chart(weightCtx, {
+    type: "line",
+    data: { labels: [], datasets: [{ label: "Weight (lbs)", data: [], borderColor: "blue", fill: false }] },
+    options: { responsive: true, scales: { y: { beginAtZero: false } } }
+  });
 }
-
-// Weight log and Chart.js setup
-let weightLog = [];
-const ctx = document.getElementById("weight-progress-chart").getContext("2d");
-const weightChart = new Chart(ctx, {
-  type: "line",
-  data: { labels: [], datasets: [{ label: "Weight (lbs)", data: [], borderColor: "blue", fill: false }] },
-  options: {
-    responsive: true,
-    scales: { y: { beginAtZero: false } },
-  }
-});
 
 function logWeight() {
   const weightInput = parseFloat(document.getElementById("dailyWeight").value);
@@ -363,6 +486,7 @@ function logWeight() {
   }
   const today = new Date().toLocaleDateString();
   weightLog.push({ date: today, weight: weightInput });
+  saveState();
   updateWeightLog();
   updateWeightChart();
 }
@@ -381,32 +505,88 @@ function updateWeightChart() {
   weightChart.update();
 }
 
-// Google Maps initialization
-let map, marker, pathCoords = [];
+// Map
+let map, polyline;
 function initMap() {
-  const center = { lat: 40.730610, lng: -73.935242 }; // NYC center approx.
+  const center = { lat: 40.730610, lng: -73.935242 };
   map = new google.maps.Map(document.getElementById("map"), { zoom: 12, center });
-  map.addListener("click", (e) => {
-    addPathPoint(e.latLng);
-  });
-}
-
-function addPathPoint(latLng) {
-  pathCoords.push(latLng);
-  if (marker) marker.setMap(null);
-  marker = new google.maps.Polyline({
+  polyline = new google.maps.Polyline({
     path: pathCoords,
     geodesic: true,
     strokeColor: "#FF0000",
     strokeOpacity: 1.0,
     strokeWeight: 2,
-    map: map,
+    map
+  });
+  map.addListener("click", e => {
+    pathCoords.push(e.latLng);
+    polyline.setPath(pathCoords);
+    saveState();
   });
 }
 
-// Initialize UI
-renderFoodButtons();
-updateTotals();
+function undoLastPoint() {
+  if (pathCoords.length > 0) {
+    pathCoords.pop();
+    polyline.setPath(pathCoords);
+    saveState();
+  }
+}
+
+function resetPath() {
+  pathCoords = [];
+  polyline.setPath(pathCoords);
+  saveState();
+}
+
+// Electrolyte advice dynamic build
+function updateElectrolyteAdvice() {
+  const temperatureF = 89; // hardcoded NYC - ideally dynamic
+  const adviceDiv = document.getElementById("electrolyteAdvice");
+  if (temperatureF <= 86) {
+    adviceDiv.innerHTML = "";
+    return;
+  }
+  let adviceHTML = `<strong>Hot Weather Electrolyte Advice:</strong><br>`;
+  adviceHTML += `🔥 It's hot! Prioritize rehydration with high-quality electrolytes:<br><ul>`;
+  Object.entries(electrolyteSupplements).forEach(([name, supp]) => {
+    adviceHTML += `<li><b>${name}:</b> Sodium ${supp.sodium}mg, Potassium ${supp.potassium}mg, Magnesium ${supp.magnesium}mg, Sugar ${supp.sugar}g`;
+    if (supp.warning) adviceHTML += ` — <i>${supp.warning}</i>`;
+    adviceHTML += `</li>`;
+  });
+  adviceHTML += `</ul>Eat potassium-rich foods like bananas and avocados as well. Avoid low-quality electrolyte products with excess sugar or additives.`;
+  adviceDiv.innerHTML = adviceHTML;
+}
+
+// Utility
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Events for calorie % inputs and calorie goal to trigger updates
+["pctBreakfast", "pctLunch", "pctSnacks", "pctDinner", "calorieGoal"].forEach(id => {
+  document.getElementById(id).addEventListener("input", () => {
+    updateTotals();
+    saveState();
+  });
+});
+
+// Weight and rollerblade inputs also save state on change
+["weight", "bladeStart", "bladeEnd", "bladeMiles"].forEach(id => {
+  document.getElementById(id).addEventListener("change", saveState);
+});
+
+// Load state on startup
+window.onload = () => {
+  loadState();
+  renderFoodButtons();
+  ["breakfast", "lunch", "snacks", "dinner"].forEach(meal => renderMealLog(meal));
+  setupWeightChart();
+  updateWeightLog();
+  updateWeightChart();
+  updateTotals();
+  updateElectrolyteAdvice();
+};
 
 </script>
 
