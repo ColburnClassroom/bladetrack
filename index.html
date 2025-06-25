@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.29</title>
+  <title>BladeTrack Web App v1.24</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -22,18 +22,10 @@
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.29</h2>
+<h2>BladeTrack Web App v1.24</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
-<p>Height: <input type="number" id="heightFeet" value="5"> ft <input type="number" id="heightInches" value="10"> in</p>
-<label>Gender:
-  <select id="gender">
-    <option value="male">Male</option>
-    <option value="female">Female</option>
-    <option value="nonbinary">Nonbinary</option>
-  </select>
-</label>
 <p>Daily Calorie Goal (kcal): <input type="number" id="calorieGoal" value="1500"></p>
 <p>Weight Loss Goal (lbs per week): <input type="number" id="weeklyLossGoal" value="2"></p>
 
@@ -91,7 +83,7 @@ function renderFoodLog() {
   }
 }
 
-const foodItems = [...]; // keep foodItems array as is from v1.28
+const foodItems = [...]; // your version 1.24 food item array goes here
 
 function renderFoods() {
   const mealLog = document.getElementById("mealLog");
