@@ -458,7 +458,7 @@ function calculateBladeCalories() {
     duration = (eh * 60 + em - (sh * 60 + sm)) / 60;
     if (duration < 0) duration = 0;
   }
-  const met = 7.0; // Moderate rollerblading
+  const met = 7.0 / 4; // Quarter intensity to be modest
   const weightKg = weight * 0.453592;
   const hours = duration || (miles / 9) || 0;
   bladeCalories = met * weightKg * hours;
