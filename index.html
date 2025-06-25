@@ -130,7 +130,7 @@
         <tbody>
           <tr><td>LMNT Electrolyte Mix</td><td>1 packet</td><td>1000</td><td>200</td><td>60</td><td>High sodium, designed for heavy sweat loss</td></tr>
           <tr><td>Banana</td><td>1 medium</td><td>1</td><td>422</td><td>32</td><td>High potassium, low sodium</td></tr>
-          <tr><td>Smart Water</td><td>591 mL bottle</td><td>110</td><td>0</td><td>0</td><td>Low electrolytes except sodium</td></tr>
+          <tr><td><strong>Smart Water</strong></td><td>591 mL bottle</td><td>110</td><td>0</td><td>0</td><td><strong>Negligible electrolytes — NOT effective for replenishment</strong></td></tr>
           <tr><td>Avocado</td><td>1/2 medium</td><td>7</td><td>487</td><td>29</td><td>High potassium, low sodium</td></tr>
           <tr><td>Broth (Chicken)</td><td>1 cup</td><td>700-900</td><td>800+</td><td>10-20</td><td>High sodium and potassium</td></tr>
           <tr><td>Almonds</td><td>1 oz</td><td>0</td><td>200</td><td>80</td><td>Good magnesium and potassium</td></tr>
@@ -206,11 +206,12 @@
   function generateElectrolyteAdvice(tempF, activity, duration) {
     let advice = '';
     if (tempF > 86 || (activity === 'blade' && duration >= 45)) {
-      advice = "🔥 It’s hot or you bladed a long session.\n" +
-               "Consider LMNT or broth for sodium replacement.\n" +
-               "Also eat potassium-rich foods like bananas or avocado.\n" +
-               "Don’t forget magnesium sources like nuts for recovery.\n" +
-               "Drink plenty of water but don't overhydrate without electrolytes.";
+      advice = "🔥 Hot or long session.\n" +
+               "Use LMNT or broth for real sodium replacement.\n" +
+               "Eat potassium-rich foods like bananas, avocado.\n" +
+               "Don’t trust Smartwater alone — it won’t replace lost electrolytes.\n" +
+               "Magnesium from nuts/seeds helps recovery.\n" +
+               "Stay hydrated but avoid overhydration without electrolytes.";
     } else if (activity === 'blade') {
       advice = "You bladed but conditions are moderate.\n" +
                "Focus on natural potassium sources (bananas, avocado) and stay hydrated.\n" +
@@ -259,14 +260,11 @@
     calorieResult.textContent = message;
     warning.textContent = '';
 
-    // Show recovery checklist for both blade and rest days
     recoveryChecklist.style.display = 'block';
 
-    // Show smart electrolyte advice below checklist
     electrolyteAdviceDiv.textContent = generateElectrolyteAdvice(temp, activity, duration || 0);
 
-    // Save daily entry to localStorage for recovery update
-    const today = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+    const today = new Date().toISOString().slice(0,10);
     const dailyEntry = {
       date: today,
       weight: weight,
@@ -296,16 +294,13 @@
     dailyEntry.electrolyteDrink = chkElectrolyteDrink.checked;
     dailyEntry.lmnt = chkLMNT.checked;
 
-    // Load existing log or create
     let log = JSON.parse(localStorage.getItem('bladeTrackLog') || '[]');
 
-    // Remove old entry for today if exists
     log = log.filter(entry => entry.date !== dailyEntry.date);
-    log.unshift(dailyEntry); // add newest first
+    log.unshift(dailyEntry);
 
     localStorage.setItem('bladeTrackLog', JSON.stringify(log));
 
-    // Reset UI
     recoveryChecklist.style.display = 'none';
     calorieResult.textContent = '';
     warning.textContent = '';
@@ -357,7 +352,6 @@
     }
   }
 
-  // Initialize UI
   displayLog();
   bladeInputsDiv.style.display = activitySelect.value === 'blade' ? 'block' : 'none';
 
