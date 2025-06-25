@@ -1,32 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.34</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
-    .hot-warning { color: orange; font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
-    th { background-color: #f9f9f9; }
-    .checkboxes { margin: 10px 0; }
-    .checkboxes label { display: block; font-size: 16px; }
-    #map { height: 300px; margin: 20px 0; }
-    .food-button { display: block; width: 100%; margin: 5px 0; padding: 10px; font-size: 14px; border-radius: 5px; border: none; text-align: left; cursor: pointer; }
-    .green { background-color: #e0f7e9; border-left: 5px solid green; }
-    .yellow { background-color: #fff9e6; border-left: 5px solid orange; }
-    .red { background-color: #fdecea; border-left: 5px solid red; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BladeTrack Web App v1.35</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+  button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
+  .hot-warning { color: orange; font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
+  th { background-color: #f9f9f9; }
+  .checkboxes { margin: 10px 0; }
+  .checkboxes label { display: block; font-size: 16px; }
+  #map { height: 300px; margin: 20px 0; }
+  .food-button { 
+    display: block; width: 100%; margin: 5px 0; padding: 10px; 
+    font-size: 14px; border-radius: 5px; border: none; text-align: left; cursor: pointer; 
+  }
+  .green { background-color: #e0f7e9; border-left: 5px solid green; }
+  .yellow { background-color: #fff9e6; border-left: 5px solid orange; }
+  .red { background-color: #fdecea; border-left: 5px solid red; }
+  .selected-food { margin-left: 20px; font-size: 14px; }
+  #dailyTotals { margin-top: 20px; font-weight: bold; }
+</style>
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.34</h2>
+<h2>BladeTrack Web App v1.35</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
-<p>Height: <input type="number" id="heightFt" value="5"> ft <input type="number" id="heightIn" value="10"> in</p>
+<p>Height: <input type="number" id="heightFt" value="5" style="width:50px;"> ft <input type="number" id="heightIn" value="10" style="width:50px;"> in</p>
 <p>Gender:
   <select id="gender">
     <option value="male">Male</option>
@@ -42,6 +47,9 @@
 
 <h3>Snacks (Unhealthy Choices)</h3>
 <div id="snacks"></div>
+
+<h3>Dinner</h3>
+<div id="dinnerLog"></div>
 
 <h3>Rollerblading Session Tracker</h3>
 <button onclick="startSession()">Start Session</button>
@@ -65,80 +73,215 @@
 <h3>Food Log Summary</h3>
 <div id="foodLog"></div>
 
+<div id="dailyTotals"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-function initMap() {
-  if (location.hostname.includes("oaiusercontent.com")) {
-    document.getElementById("map").innerHTML = "<p><em>Map disabled in sandbox environment.</em></p>";
-    return;
-  }
-  const unionSquare = { lat: 40.7359, lng: -73.9911 };
-  const map = new google.maps.Map(document.getElementById("map"), {
-    zoom: 15,
-    center: unionSquare
-  });
-  new google.maps.Marker({ position: unionSquare, map: map });
-}
-
-function renderFoods() {
-  const meals = ["Breakfast", "Lunch", "Dinner"];
-  const foods = [
-    { name: "Banana Baby Food (1 container) – easy on digestion", color: "green", meal: "Breakfast" },
-    { name: "Plain Nonfat Yogurt (1 cup) – low fat, protein boost", color: "green", meal: "Breakfast" },
-    { name: "Tofu (102.5g, 1/2 pack) – plant protein", color: "green", meal: "Breakfast" },
-    { name: "Whey Protein Isolate (1 scoop) – high protein, fast absorption", color: "green", meal: "Breakfast" },
-    { name: "Peanut Butter (1 tsp) – healthy fats in moderation", color: "green", meal: "Breakfast" },
-    { name: "Whey Protein Isolate (1 scoop) – high protein, fast absorption", color: "green", meal: "Lunch" },
-    { name: "Salmon (6 oz) – omega-3s and satiety", color: "green", meal: "Lunch" },
-    { name: "Salmon (6 oz) – omega-3s and satiety", color: "green", meal: "Dinner" },
-    { name: "Chicken Breast (4 oz) – lean protein", color: "green", meal: "Lunch" },
-    { name: "Chicken Breast (4 oz) – lean protein", color: "green", meal: "Dinner" },
-    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts) – fiber, healthy fats", color: "green", meal: "Breakfast" },
-    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts) – fiber, healthy fats", color: "green", meal: "Lunch" },
-    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts) – fiber, healthy fats", color: "green", meal: "Dinner" },
-    { name: "Collard Greens (1 cup) – high in calcium and fiber", color: "green", meal: "Dinner" }
+  // Food data with calories and macros per serving
+  // Macros in grams: protein, carbs, fat
+  const foodData = [
+    { name: "Banana Baby Food (1 container)", meal: "Breakfast", color: "green", calories: 100, protein: 1, carbs: 25, fat: 0 },
+    { name: "Plain Nonfat Yogurt (1 cup)", meal: "Breakfast", color: "green", calories: 90, protein: 10, carbs: 12, fat: 0 },
+    { name: "Tofu (102.5g, 1/2 pack)", meal: "Breakfast", color: "green", calories: 200, protein: 20, carbs: 4, fat: 11 },
+    { name: "Whey Protein Isolate (1 scoop)", meal: "Breakfast", color: "green", calories: 110, protein: 25, carbs: 1, fat: 0 },
+    { name: "Peanut Butter (1 tsp)", meal: "Breakfast", color: "green", calories: 32, protein: 1, carbs: 1, fat: 3 },
+    { name: "Whey Protein Isolate (1 scoop)", meal: "Lunch", color: "green", calories: 110, protein: 25, carbs: 1, fat: 0 },
+    { name: "Salmon (6 oz)", meal: "Lunch", color: "green", calories: 367, protein: 39, carbs: 0, fat: 22 },
+    { name: "Salmon (6 oz)", meal: "Dinner", color: "green", calories: 367, protein: 39, carbs: 0, fat: 22 },
+    { name: "Chicken Breast (4 oz)", meal: "Lunch", color: "green", calories: 187, protein: 35, carbs: 0, fat: 4 },
+    { name: "Chicken Breast (4 oz)", meal: "Dinner", color: "green", calories: 187, protein: 35, carbs: 0, fat: 4 },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", meal: "Breakfast", color: "green", calories: 300, protein: 10, carbs: 10, fat: 27 },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", meal: "Lunch", color: "green", calories: 300, protein: 10, carbs: 10, fat: 27 },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", meal: "Dinner", color: "green", calories: 300, protein: 10, carbs: 10, fat: 27 },
+    { name: "Collard Greens (1 cup)", meal: "Dinner", color: "green", calories: 70, protein: 5, carbs: 10, fat: 1 },
+    // Snacks
+    { name: "Potato Chips", meal: "Snack", color: "red", calories: 150, protein: 2, carbs: 15, fat: 10, note: "Bad sodium source, fried fats." },
+    { name: "Gummy Worms", meal: "Snack", color: "red", calories: 140, protein: 0, carbs: 35, fat: 0, note: "Sugar high, zero nutrients." },
+    { name: "Candy Bar", meal: "Snack", color: "red", calories: 220, protein: 2, carbs: 30, fat: 12, note: "Empty calories, low satiety." },
+    { name: "Movie Popcorn", meal: "Snack", color: "red", calories: 120, protein: 2, carbs: 14, fat: 7, note: "Excess salt, bad for hydration." }
   ];
 
-  const log = document.getElementById("mealLog");
-  log.innerHTML = "";
-  meals.forEach(meal => {
-    const mealHeader = document.createElement("h4");
-    mealHeader.innerText = meal;
-    log.appendChild(mealHeader);
-    foods.filter(f => f.meal === meal).forEach(food => {
+  const meals = ["Breakfast", "Lunch", "Snack", "Dinner"];
+  // Track selected foods per meal
+  const selectedFoods = {
+    Breakfast: [],
+    Lunch: [],
+    Snack: [],
+    Dinner: []
+  };
+
+  // Render food buttons for each meal
+  function renderFoods() {
+    const mealLogDiv = document.getElementById("mealLog");
+    mealLogDiv.innerHTML = "";
+
+    meals.forEach(meal => {
+      if (meal === "Snack") {
+        // Snacks handled separately
+        renderSnacks();
+        return;
+      }
+      const header = document.createElement("h4");
+      header.innerText = meal;
+      mealLogDiv.appendChild(header);
+
+      const foodsForMeal = foodData.filter(f => f.meal === meal);
+      foodsForMeal.forEach(food => {
+        const btn = document.createElement("button");
+        btn.className = `food-button ${food.color}`;
+        btn.innerText = `${food.name} — ${food.calories} kcal`;
+        btn.title = food.note ? food.note : "";
+        btn.addEventListener("click", () => {
+          addFoodToMeal(meal, food);
+        });
+        mealLogDiv.appendChild(btn);
+      });
+
+      // Show selected foods & totals below each meal
+      const selectedDiv = document.createElement("div");
+      selectedDiv.id = `${meal.toLowerCase()}Selected`;
+      mealLogDiv.appendChild(selectedDiv);
+      updateMealSummary(meal);
+    });
+  }
+
+  // Render snacks between Lunch and Dinner
+  function renderSnacks() {
+    const snackDiv = document.getElementById("snacks");
+    snackDiv.innerHTML = "<h4>Snacks</h4>";
+    const snacks = foodData.filter(f => f.meal === "Snack");
+    snacks.forEach(food => {
       const btn = document.createElement("button");
       btn.className = `food-button ${food.color}`;
-      btn.innerText = food.name;
-      btn.addEventListener("click", () => logFood(meal, food.name));
-      log.appendChild(btn);
+      btn.innerText = `${food.name} — ${food.calories} kcal`;
+      btn.title = food.note ? food.note : "";
+      btn.addEventListener("click", () => {
+        addFoodToMeal("Snack", food);
+      });
+      snackDiv.appendChild(btn);
     });
+    // Show selected snack foods & totals below snacks
+    const selectedDiv = document.createElement("div");
+    selectedDiv.id = `snackSelected`;
+    snackDiv.appendChild(selectedDiv);
+    updateMealSummary("Snack");
+  }
+
+  // Add food item to selectedFoods and update UI
+  function addFoodToMeal(meal, food) {
+    selectedFoods[meal].push(food);
+    updateMealSummary(meal);
+    updateDailyTotals();
+  }
+
+  // Calculate total calories and macros per meal, then update display
+  function updateMealSummary(meal) {
+    const container = document.getElementById(`${meal.toLowerCase()}Selected`);
+    if (!container) return;
+    container.innerHTML = "";
+
+    if (selectedFoods[meal].length === 0) {
+      container.innerText = "No foods selected yet.";
+      return;
+    }
+
+    let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+    selectedFoods[meal].forEach(food => {
+      totalCalories += food.calories;
+      totalProtein += food.protein;
+      totalCarbs += food.carbs;
+      totalFat += food.fat;
+      const p = document.createElement("p");
+      p.className = "selected-food";
+      p.innerText = `${food.name} — ${food.calories} kcal`;
+      container.appendChild(p);
+    });
+
+    // Calculate macros percentage
+    const caloriesFromProtein = totalProtein * 4;
+    const caloriesFromCarbs = totalCarbs * 4;
+    const caloriesFromFat = totalFat * 9;
+    const totalMacroCalories = caloriesFromProtein + caloriesFromCarbs + caloriesFromFat;
+    // Avoid divide by zero
+    let pctProtein = 0, pctCarbs = 0, pctFat = 0;
+    if(totalMacroCalories > 0) {
+      pctProtein = ((caloriesFromProtein / totalMacroCalories) * 100).toFixed(1);
+      pctCarbs = ((caloriesFromCarbs / totalMacroCalories) * 100).toFixed(1);
+      pctFat = ((caloriesFromFat / totalMacroCalories) * 100).toFixed(1);
+    }
+
+    const summary = document.createElement("p");
+    summary.style.fontWeight = "bold";
+    summary.innerText = `Total: ${totalCalories} kcal — Protein: ${pctProtein}%, Carbs: ${pctCarbs}%, Fat: ${pctFat}%`;
+    container.appendChild(summary);
+  }
+
+  // Update daily total calories and macros for all meals combined
+  function updateDailyTotals() {
+    const dailyDiv = document.getElementById("dailyTotals");
+    let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+    meals.forEach(meal => {
+      selectedFoods[meal].forEach(food => {
+        totalCalories += food.calories;
+        totalProtein += food.protein;
+        totalCarbs += food.carbs;
+        totalFat += food.fat;
+      });
+    });
+
+    // Calculate macros percentage
+    const caloriesFromProtein = totalProtein * 4;
+    const caloriesFromCarbs = totalCarbs * 4;
+    const caloriesFromFat = totalFat * 9;
+    const totalMacroCalories = caloriesFromProtein + caloriesFromCarbs + caloriesFromFat;
+    let pctProtein = 0, pctCarbs = 0, pctFat = 0;
+    if(totalMacroCalories > 0) {
+      pctProtein = ((caloriesFromProtein / totalMacroCalories) * 100).toFixed(1);
+      pctCarbs = ((caloriesFromCarbs / totalMacroCalories) * 100).toFixed(1);
+      pctFat = ((caloriesFromFat / totalMacroCalories) * 100).toFixed(1);
+    }
+
+    dailyDiv.innerHTML = `Daily Total: ${totalCalories} kcal — Protein: ${pctProtein}%, Carbs: ${pctCarbs}%, Fat: ${pctFat}%`;
+  }
+
+  // --- Rollerblading and Weight tracking code (simplified placeholder) ---
+
+  function startSession() {
+    alert("Rollerblading session started (placeholder).");
+  }
+  function stopSession() {
+    alert("Rollerblading session stopped (placeholder).");
+  }
+
+  function logWeight() {
+    const w = document.getElementById("dailyWeight").value;
+    if (!w || w <= 0) {
+      alert("Please enter a valid weight.");
+      return;
+    }
+    alert(`Logged weight: ${w} lbs (placeholder).`);
+  }
+
+  // Map initialization stub (disabled in sandbox)
+  function initMap() {
+    if(location.hostname.includes("oaiusercontent.com")) {
+      document.getElementById("map").innerHTML = "<p><em>Map disabled in sandbox environment.</em></p>";
+      return;
+    }
+    const unionSquare = { lat: 40.7359, lng: -73.9911 };
+    const map = new google.maps.Map(document.getElementById("map"), {
+      zoom: 15,
+      center: unionSquare
+    });
+    new google.maps.Marker({ position: unionSquare, map: map });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    renderFoods();
+    if(typeof google !== "undefined") {
+      initMap();
+    }
   });
-
-  const snackList = document.getElementById("snacks");
-  snackList.innerHTML = "";
-  const snacks = [
-    { name: "Potato Chips – Bad sodium source, fried fats", color: "red" },
-    { name: "Gummy Worms – Sugar high, zero nutrients", color: "red" },
-    { name: "Candy Bar – Empty calories, low satiety", color: "red" },
-    { name: "Movie Popcorn – Excess salt, bad for hydration", color: "red" }
-  ];
-  snacks.forEach(snack => {
-    const btn = document.createElement("button");
-    btn.className = `food-button ${snack.color}`;
-    btn.innerText = snack.name;
-    btn.addEventListener("click", () => logFood("Snack", snack.name));
-    snackList.appendChild(btn);
-  });
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-  renderFoods();
-});
-
-function logFood(meal, itemName) {
-  console.log(`Logged food: ${meal} - ${itemName}`);
-  // TODO: Extend this to update food log with calories/macros
-}
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNyTZL3SySu9n5tkcyc9fiU34d2iviE9E&callback=initMap" async defer></script>
 </body>
