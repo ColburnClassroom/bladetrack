@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.51</title>
+  <title>BladeTrack Web App v1.52</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -24,7 +24,7 @@
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.51</h2>
+<h2>BladeTrack Web App v1.52</h2>
 <p><strong>Note:</strong> The only way to lose weight is to maintain a caloric deficit.</p>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
@@ -40,11 +40,12 @@
 <p>Daily Calorie Goal: <input type="number" id="calorieGoal" value="1500"> calories</p>
 <p>Weight Loss Goal (lbs per week): <input type="number" id="weeklyLossGoal" value="2"></p>
 
-<p>Target Calorie Distribution: 
-  Breakfast <input type="number" id="pctBreakfast" value="25" style="width:60px">% 
-  Lunch <input type="number" id="pctLunch" value="40" style="width:60px">% 
-  Snacks <input type="number" id="pctSnacks" value="10" style="width:60px">% 
-  Dinner <input type="number" id="pctDinner" value="25" style="width:60px">%
+<p>Target Calorie Distribution:</p>
+<p>
+  Breakfast <input type="number" id="pctBreakfast" value="25" style="width:60px">% <label><input type="checkbox" id="lockBreakfast"> Lock</label><br>
+  Lunch <input type="number" id="pctLunch" value="40" style="width:60px">% <label><input type="checkbox" id="lockLunch"> Lock</label><br>
+  Snacks <input type="number" id="pctSnacks" value="10" style="width:60px">% <label><input type="checkbox" id="lockSnacks"> Lock</label><br>
+  Dinner <input type="number" id="pctDinner" value="25" style="width:60px">% <label><input type="checkbox" id="lockDinner"> Lock</label>
 </p>
 
 <h3>Meal Tracking</h3>
