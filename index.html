@@ -1,81 +1,356 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.21</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BladeTrack Web App v1.22</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    button, input, label, select { display: block; width: 100%; margin: 10px 0; padding: 12px; font-size: 16px; }
-    .hot-warning { color: orange; font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
-    th { background-color: #f9f9f9; }
-    .checkboxes { margin: 10px 0; }
-    .checkboxes label { display: block; font-size: 16px; }
-    #map { height: 300px; margin: 20px 0; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+    }
+    button,
+    input,
+    label,
+    select {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 12px;
+      font-size: 16px;
+    }
+    .hot-warning {
+      color: orange;
+      font-weight: bold;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      font-size: 14px;
+      text-align: center;
+    }
+    th {
+      background-color: #f9f9f9;
+    }
+    .checkboxes {
+      margin: 10px 0;
+    }
+    .checkboxes label {
+      display: block;
+      font-size: 16px;
+    }
+    #map {
+      height: 300px;
+      margin: 20px 0;
+    }
+    .green {
+      background-color: #c8f7c5;
+    }
+    .yellow {
+      background-color: #fff7cc;
+    }
+    .red {
+      background-color: #f7c5c5;
+    }
   </style>
 </head>
 <body>
+  <h2>BladeTrack Web App v1.22</h2>
+  <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
-<h2>BladeTrack Web App v1.21</h2>
-<p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
+  <p>
+    Weight (lbs):
+    <input type="number" id="weight" value="175" min="50" max="700" />
+  </p>
+  <p>
+    Height:
+    <input type="number" id="heightFeet" value="5" min="1" max="9" style="width: 50px; display: inline-block;" />
+    ft
+    <input type="number" id="heightInches" value="10" min="0" max="11" style="width: 50px; display: inline-block;" />
+    in
+  </p>
+  <label
+    >Gender:
+    <select id="gender" style="width: auto; display: inline-block; margin-left: 10px;">
+      <option value="male" selected>Male</option>
+      <option value="female">Female</option>
+      <option value="nonbinary">Nonbinary</option>
+    </select>
+  </label>
+  <p>
+    Daily Calorie Goal (kcal):
+    <input type="number" id="calorieGoal" value="1500" min="500" max="10000" />
+  </p>
+  <p>
+    Weight Loss Goal (lbs per week):
+    <input type="number" id="weeklyLossGoal" value="2" min="0" max="10" step="0.1" />
+  </p>
 
-<p>Weight (lbs): <input type="number" id="weight" value="175"></p>
-<p>Height: <input type="number" id="heightFeet" value="5"> ft <input type="number" id="heightInches" value="10"> in</p>
-<label>Gender:
-  <select id="gender">
-    <option value="male">Male</option>
-    <option value="female">Female</option>
-    <option value="nonbinary">Nonbinary</option>
-  </select>
-</label>
-<p>Daily Calorie Goal (kcal): <input type="number" id="calorieGoal" value="1500"></p>
-<p>Weight Loss Goal (lbs per week): <input type="number" id="weeklyLossGoal" value="2"></p>
+  <h3>Meal Tracking</h3>
+  <div id="mealLog"></div>
 
-<h3>Meal Tracking</h3>
-<div id="mealLog"></div>
+  <h3>Snacks (Unhealthy Choices)</h3>
+  <div id="snacks"></div>
 
-<h3>Snacks (Unhealthy Choices)</h3>
-<div id="snacks"></div>
+  <h3>Rollerblading Session Tracker</h3>
+  <button onclick="startSession()">Start Session</button>
+  <button onclick="stopSession()">Stop Session</button>
+  <div id="weather"></div>
+  <div id="warning" class="hot-warning"></div>
+  <div class="checkboxes" id="checklist" style="display: none;">
+    <label><input type="checkbox" id="drankWater" /> Drank water</label>
+    <label><input type="checkbox" id="ateBanana" /> Ate banana</label>
+    <label><input type="checkbox" id="ateSaltyFood" /> Ate salty food</label>
+    <button onclick="saveChecklist()">✔️ Save Session</button>
+  </div>
+  <div id="result"></div>
+  <div id="map"></div>
 
-<h3>Rollerblading Session Tracker</h3>
-<button onclick="startSession()">Start Session</button>
-<button onclick="stopSession()">Stop Session</button>
-<div id="weather"></div>
-<div id="warning" class="hot-warning"></div>
-<div class="checkboxes" id="checklist" style="display:none;">
-  <label><input type="checkbox" id="drankWater"> Drank water</label>
-  <label><input type="checkbox" id="ateBanana"> Ate banana</label>
-  <label><input type="checkbox" id="ateSaltyFood"> Ate salty food</label>
-  <button onclick="saveChecklist()">✔️ Save Session</button>
-</div>
-<div id="result"></div>
-<div id="map"></div>
+  <h3>Weight Tracking & Progress</h3>
+  <p>
+    Log Today's Weight (lbs):
+    <input type="number" id="dailyWeight" min="50" max="700" />
+    <button onclick="logWeight()">Log Weight</button>
+  </p>
+  <canvas id="weight-progress-chart" width="600" height="200"></canvas>
+  <div id="weightLog"></div>
 
-<h3>Weight Tracking & Progress</h3>
-<p>Log Today's Weight (lbs): <input type="number" id="dailyWeight"><button onclick="logWeight()">Log Weight</button></p>
-<canvas id="weight-progress-chart" width="600" height="200"></canvas>
-<div id="weightLog"></div>
+  <h3>Food Log Summary</h3>
+  <div id="foodLog"></div>
 
-<h3>Food Log Summary</h3>
-<div id="foodLog"></div>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    // --- FOOD DATABASE WITH MACROS & COLOR CODING ---
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  // Insert full JS code here (same logic as previously implemented)
-  // initMap(), startSession(), stopSession(), updateMealLog(), updateFoodLog(), logWeight(), updateWeightChart(), etc.
-</script>
-<script>
-  function initMap() {
-    const unionSquare = { lat: 40.7359, lng: -73.9911 };
-    const map = new google.maps.Map(document.getElementById("map"), {
-      zoom: 15,
-      center: unionSquare
-    });
-    new google.maps.Marker({ position: unionSquare, map: map });
-  }
-</script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNyTZL3SySu9n5tkcyc9fiU34d2iviE9E&callback=initMap" async defer></script>
-</body>
-</html>
+    // Color coding rules: Strict green/yellow/red
+    // Red = unhealthy (mostly snacks), yellow = borderline (rare), green = healthy/ideal
+
+    // Macro keys: protein, carbs, fat all in grams
+    // calories = kcal
+    const foods = {
+      breakfast: [
+        {
+          name: "Banana baby food (1 container)",
+          calories: 100,
+          protein: 1,
+          carbs: 23,
+          fat: 0,
+          color: "green",
+        },
+        {
+          name: "Tofu (102.5g / half package)",
+          calories: 200,
+          protein: 20,
+          carbs: 2,
+          fat: 12,
+          color: "green",
+        },
+        {
+          name: "Plain nonfat yogurt (1 cup)",
+          calories: 150,
+          protein: 13,
+          carbs: 17,
+          fat: 0,
+          color: "green",
+        },
+        {
+          name: "Whey protein isolate (1 scoop)",
+          calories: 110,
+          protein: 25,
+          carbs: 1,
+          fat: 0,
+          color: "green",
+        },
+        {
+          name: "Mixed nuts (5 pistachios, 5 almonds, 5 cashews, 5 walnuts)",
+          calories: 170,
+          protein: 5,
+          carbs: 6,
+          fat: 15,
+          color: "green",
+        },
+        {
+          name: "Oatmeal (1/2 cup dry)",
+          calories: 150,
+          protein: 5,
+          carbs: 27,
+          fat: 3,
+          color: "green",
+        },
+        {
+          name: "Egg whites (3 large)",
+          calories: 51,
+          protein: 11,
+          carbs: 0,
+          fat: 0,
+          color: "green",
+        },
+      ],
+      lunch: [
+        {
+          name: "Salmon (6 ounces)",
+          calories: 367,
+          protein: 39,
+          carbs: 0,
+          fat: 22,
+          color: "green",
+        },
+        {
+          name: "Chicken breast (6 ounces)",
+          calories: 280,
+          protein: 53,
+          carbs: 0,
+          fat: 6,
+          color: "green",
+        },
+        {
+          name: "Mixed green salad (1 bowl)",
+          calories: 70,
+          protein: 3,
+          carbs: 10,
+          fat: 2,
+          color: "green",
+        },
+        {
+          name: "Mixed nuts (5 pistachios, 5 almonds, 5 cashews, 5 walnuts)",
+          calories: 170,
+          protein: 5,
+          carbs: 6,
+          fat: 15,
+          color: "green",
+        },
+      ],
+      dinner: [
+        {
+          name: "Salmon (6 ounces)",
+          calories: 367,
+          protein: 39,
+          carbs: 0,
+          fat: 22,
+          color: "green",
+        },
+        {
+          name: "Chicken breast (6 ounces)",
+          calories: 280,
+          protein: 53,
+          carbs: 0,
+          fat: 6,
+          color: "green",
+        },
+        {
+          name: "Mixed green salad (1 bowl)",
+          calories: 70,
+          protein: 3,
+          carbs: 10,
+          fat: 2,
+          color: "green",
+        },
+        {
+          name: "Mixed nuts (5 pistachios, 5 almonds, 5 cashews, 5 walnuts)",
+          calories: 170,
+          protein: 5,
+          carbs: 6,
+          fat: 15,
+          color: "green",
+        },
+      ],
+      snacks: [
+        {
+          name: "Potato chips (1 bag)",
+          calories: 150,
+          protein: 2,
+          carbs: 15,
+          fat: 10,
+          color: "red",
+          guilt: "Eating chips? Try to keep these rare.",
+        },
+        {
+          name: "Popcorn (1 bag)",
+          calories: 100,
+          protein: 2,
+          carbs: 19,
+          fat: 2,
+          color: "red",
+          guilt: "Popcorn is tasty but not great for your diet.",
+        },
+        {
+          name: "Gummy worms (1 pack)",
+          calories: 160,
+          protein: 0,
+          carbs: 40,
+          fat: 0,
+          color: "red",
+          guilt: "Candy adds calories but no nutrition.",
+        },
+        {
+          name: "Candy bar",
+          calories: 220,
+          protein: 2,
+          carbs: 26,
+          fat: 12,
+          color: "red",
+          guilt: "Candy bars are a treat, not a habit.",
+        },
+        {
+          name: "Soda (12 oz can)",
+          calories: 140,
+          protein: 0,
+          carbs: 39,
+          fat: 0,
+          color: "red",
+          guilt: "Sugary drinks add calories without filling you up.",
+        },
+      ],
+    };
+
+    // State
+    let mealSelections = {
+      breakfast: [],
+      lunch: [],
+      dinner: [],
+      snacks: [],
+    };
+
+    // Helpers
+    function colorClass(color) {
+      if (color === "green") return "green";
+      if (color === "yellow") return "yellow";
+      return "red";
+    }
+
+    // Calculate macros totals and calories from list of foods
+    function calculateTotals(foodList) {
+      return foodList.reduce(
+        (acc, food) => {
+          acc.calories += food.calories;
+          acc.protein += food.protein;
+          acc.carbs += food.carbs;
+          acc.fat += food.fat;
+          return acc;
+        },
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      );
+    }
+
+    // Calculate macros percentages for a food list
+    function calculateMacroPercentages(totals) {
+      const totalMacros = totals.protein + totals.carbs + totals.fat;
+      if (totalMacros === 0) return { protein: 0, carbs: 0, fat: 0 };
+      return {
+        protein: ((totals.protein / totalMacros) * 100).toFixed(1),
+        carbs: ((totals.carbs / totalMacros) * 100).toFixed(1),
+        fat: ((totals.fat / totalMacros) * 100).toFixed(1),
+      };
+    }
+
+    // Update the meal log display
+    function updateMealLog() {
+      const container = document.getElementById
