@@ -1,9 +1,10 @@
+<!-- BladeTrack Web App Version 1.11 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>BladeTrack Web App</title>
+<title>BladeTrack Web App v1.11</title>
 <style>
   body {
     font-family: sans-serif;
@@ -102,7 +103,7 @@
 </style>
 </head>
 <body>
-<h2>BladeTrack Web App</h2>
+<h2>BladeTrack Web App v1.11</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <section id="user-info">
@@ -372,7 +373,221 @@
     } else if (selectedGender === 'female') {
       bmr = 10 * (weight * 0.4536) + 6.25 * (heightInchesTotal * 2.54) - 5 * 30 - 161;
     } else {
-      // Nonbinary: average male/female
       const bmrMale = 10 * (weight * 0.4536) + 6.25 * (heightInchesTotal * 2.54) - 5 * 30 + 5;
       const bmrFemale = 10 * (weight * 0.4536) + 6.25 * (heightInchesTotal * 2.54) - 5 * 30 - 161;
-      bmr = (bmr
+      bmr = (bmrMale + bmrFemale) / 2;
+    }
+
+    // Activity factor ~1.55 (moderate)
+    const maintenanceCalories = bmr * 1.55;
+    const weightLossGoalLbs = parseFloat(weightLossGoalInput.value) || 2;
+    // 1 lb fat = 3500 kcal, so daily deficit = weekly goal * 3500 / 7
+    const dailyCalorieDeficit = (weightLossGoalLbs * 3500) / 7;
+    const recommendedCalories = Math.max(1200, Math.round(maintenanceCalories - dailyCalorieDeficit));
+
+    calorieGoalInput.value = recommendedCalories;
+    weightGoalsText.textContent = `To lose ${weightLossGoalLbs.toFixed(1)} lbs/week, your estimated calorie goal is ${recommendedCalories} kcal/day.`;
+  }
+
+  [weightInput, heightFeetInput, heightInchesInput, weightLossGoalInput].forEach(input => {
+    input.addEventListener('input', updateGoalsAndBMI);
+  });
+
+  calorieGoalInput.addEventListener('input', () => {
+    // Allow manual override without changing other calculations
+    weightGoalsText.textContent = `Calorie goal set to ${calorieGoalInput.value} kcal/day (manual override).`;
+  });
+
+  // Initialize meals UI
+  const mealSectionsContainer = document.getElementById('meal-sections');
+
+  function createMealSection(mealName, mealTitle) {
+    const section = document.createElement('section');
+    section.className = 'meal-section';
+    section.id = mealName + '-section';
+    const title = document.createElement('h3');
+    title.textContent = mealTitle;
+    section.appendChild(title);
+
+    const listDiv = document.createElement('div');
+    listDiv.id = mealName + '-foods';
+    section.appendChild(listDiv);
+
+    const logDiv = document.createElement('div');
+    logDiv.id = mealName + '-log';
+    section.appendChild(logDiv);
+
+    mealSectionsContainer.appendChild(section);
+  }
+
+  ['breakfast', 'lunch', 'dinner'].forEach(m => createMealSection(m, m.charAt(0).toUpperCase() + m.slice(1)));
+
+  // Snacks in separate section already in HTML (#snacks-list)
+
+  // Render food choices
+  function renderFoodChoices() {
+    ['breakfast', 'lunch', 'dinner'].forEach(meal => {
+      const container = document.getElementById(meal + '-foods');
+      container.innerHTML = '';
+      foods[meal].forEach(food => {
+        const div = document.createElement('div');
+        div.className = 'food-item ' + (food.healthy ? 'healthy' : 'unhealthy');
+        div.textContent = `${food.name} — ${food.calories} kcal`;
+        div.title = food.guilt || '';
+        div.onclick = () => {
+          mealLogs[meal].push(food);
+          renderMealLog(meal);
+          updateFoodSummary();
+        };
+        container.appendChild(div);
+      });
+    });
+
+    // Snacks
+    const snacksContainer = document.getElementById('snacks-list');
+    snacksContainer.innerHTML = '';
+    foods.snacks.forEach(food => {
+      const div = document.createElement('div');
+      div.className = 'food-item unhealthy';
+      div.textContent = `${food.name} — ${food.calories} kcal`;
+      div.title = food.guilt || '';
+      div.onclick = () => {
+        mealLogs.snacks.push(food);
+        renderMealLog('snacks');
+        updateFoodSummary();
+      };
+      snacksContainer.appendChild(div);
+    });
+  }
+
+  // Render meal logs
+  function renderMealLog(meal) {
+    const logDiv = document.getElementById(meal + '-log');
+    logDiv.innerHTML = '';
+    if (mealLogs[meal].length === 0) {
+      logDiv.textContent = 'No items logged.';
+      return;
+    }
+
+    // Aggregate same items and count quantities
+    const counts = {};
+    mealLogs[meal].forEach(f => {
+      counts[f.name] = counts[f.name] ? counts[f.name] + 1 : 1;
+    });
+
+    // Create list with quantities
+    const ul = document.createElement('ul');
+    for (const name in counts) {
+      const food = foods[meal].find(f => f.name === name) || foods.snacks.find(f => f.name === name);
+      const li = document.createElement('li');
+      li.textContent = `${name} x ${counts[name]} — ${food.calories * counts[name]} kcal`;
+      ul.appendChild(li);
+    }
+    logDiv.appendChild(ul);
+  }
+
+  // Update food summary with total calories and macros
+  function updateFoodSummary() {
+    let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+
+    ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
+      mealLogs[meal].forEach(food => {
+        totalCalories += food.calories;
+        totalProtein += food.protein;
+        totalCarbs += food.carbs;
+        totalFat += food.fat;
+      });
+    });
+
+    const totalMacrosCalories = totalProtein * 4 + totalCarbs * 4 + totalFat * 9;
+    const proteinPct = totalMacrosCalories ? ((totalProtein * 4) / totalMacrosCalories * 100).toFixed(1) : 0;
+    const carbsPct = totalMacrosCalories ? ((totalCarbs * 4) / totalMacrosCalories * 100).toFixed(1) : 0;
+    const fatPct = totalMacrosCalories ? ((totalFat * 9) / totalMacrosCalories * 100).toFixed(1) : 0;
+
+    const summaryDiv = document.getElementById('food-summary-details');
+    summaryDiv.innerHTML = `
+      <p><strong>Total calories consumed:</strong> ${totalCalories} kcal</p>
+      <p><strong>Macronutrient breakdown:</strong> Protein ${proteinPct}%, Carbs ${carbsPct}%, Fat ${fatPct}%</p>
+      <p>${totalCalories > parseInt(calorieGoalInput.value) ? '<strong style="color:red;">Warning: You have exceeded your daily calorie goal!</strong>' : ''}</p>
+    `;
+  }
+
+  // Weight logging and progress chart
+  const weightInputLog = document.getElementById('weight-input');
+  const logWeightBtn = document.getElementById('log-weight-btn');
+  const weightLogBody = document.getElementById('weight-log-body');
+  const weightChartCtx = document.getElementById('weight-progress-chart').getContext('2d');
+  let weightChart;
+
+  function renderWeightLog() {
+    weightLogBody.innerHTML = '';
+    weightLog.forEach(entry => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${entry.date}</td><td>${entry.weight.toFixed(1)}</td>`;
+      weightLogBody.appendChild(tr);
+    });
+  }
+
+  function updateWeightChart() {
+    if (weightChart) weightChart.destroy();
+    const labels = weightLog.map(e => e.date);
+    const data = weightLog.map(e => e.weight);
+    weightChart = new Chart(weightChartCtx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Weight (lbs)',
+          data,
+          fill: false,
+          borderColor: 'rgb(75, 192, 192)',
+          tension: 0.1
+        }]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: false }
+        }
+      }
+    });
+  }
+
+  logWeightBtn.onclick = () => {
+    const w = parseFloat(weightInputLog.value);
+    if (!w || w < 50 || w > 600) {
+      alert("Enter a valid weight between 50 and 600 lbs.");
+      return;
+    }
+    const dateStr = new Date().toLocaleDateString();
+    // Prevent duplicate date entries
+    const existingIndex = weightLog.findIndex(e => e.date === dateStr);
+    if (existingIndex !== -1) weightLog.splice(existingIndex, 1);
+    weightLog.push({ date: dateStr, weight: w });
+    localStorage.setItem('weightLog', JSON.stringify(weightLog));
+    renderWeightLog();
+    updateWeightChart();
+    weightInput.value = w;
+    updateGoalsAndBMI();
+    alert('Weight logged!');
+  };
+
+  // Initialize on load
+  function init() {
+    renderFoodChoices();
+    renderMealLog('breakfast');
+    renderMealLog('lunch');
+    renderMealLog('dinner');
+    renderMealLog('snacks');
+    updateFoodSummary();
+    renderWeightLog();
+    updateWeightChart();
+    updateGoalsAndBMI();
+    initMap();
+    document.getElementById('stop-session-btn').disabled = true;
+  }
+  window.onload = init;
+})();
+</script>
+
+</body>
+</html>
