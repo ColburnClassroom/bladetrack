@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.33</title>
+  <title>BladeTrack Web App v1.34</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.33</h2>
+<h2>BladeTrack Web App v1.34</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
@@ -80,10 +80,6 @@ function initMap() {
   new google.maps.Marker({ position: unionSquare, map: map });
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-  renderFoods();
-});
-
 function renderFoods() {
   const meals = ["Breakfast", "Lunch", "Dinner"];
   const foods = [
@@ -113,7 +109,7 @@ function renderFoods() {
       const btn = document.createElement("button");
       btn.className = `food-button ${food.color}`;
       btn.innerText = food.name;
-      btn.onclick = () => logFood(meal, food.name);
+      btn.addEventListener("click", () => logFood(meal, food.name));
       log.appendChild(btn);
     });
   });
@@ -130,10 +126,14 @@ function renderFoods() {
     const btn = document.createElement("button");
     btn.className = `food-button ${snack.color}`;
     btn.innerText = snack.name;
-    btn.onclick = () => logFood("Snack", snack.name);
+    btn.addEventListener("click", () => logFood("Snack", snack.name));
     snackList.appendChild(btn);
   });
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+  renderFoods();
+});
 
 function logFood(meal, itemName) {
   console.log(`Logged food: ${meal} - ${itemName}`);
