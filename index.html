@@ -83,7 +83,20 @@ function renderFoodLog() {
   }
 }
 
-const foodItems = [...]; // your version 1.24 food item array goes here
+const foodItems = [
+  { name: "Banana Baby Food", meal: "breakfast", calories: 100, protein: 1, carbs: 22, fat: 0.5, color: "green", description: "Easy to digest potassium source." },
+  { name: "Tofu (1/2 package, 102.5g)", meal: "breakfast", calories: 200, protein: 20, carbs: 4, fat: 12, color: "green", description: "Plant protein and calcium." },
+  { name: "Whey Protein Isolate", meal: "breakfast", calories: 110, protein: 25, carbs: 1, fat: 0.5, color: "green", description: "High-quality protein, quick absorption." },
+  { name: "Plain Non-Fat Yogurt", meal: "breakfast", calories: 90, protein: 10, carbs: 12, fat: 0, color: "green", description: "Low calorie and calcium-rich." },
+  { name: "Salmon (6 oz)", meal: "lunch", calories: 367, protein: 39, carbs: 0, fat: 22, color: "green", description: "Rich in omega-3s and protein." },
+  { name: "Chicken Breast (6 oz)", meal: "lunch", calories: 280, protein: 50, carbs: 0, fat: 6, color: "green", description: "Lean, filling protein." },
+  { name: "Mixed Green Salad", meal: "lunch", calories: 35, protein: 2, carbs: 5, fat: 0.5, color: "green", description: "Low-cal, hydrating base food." },
+  { name: "Peanut Butter (1 tsp)", meal: "breakfast", calories: 32, protein: 1.5, carbs: 1, fat: 3, color: "yellow", description: "Small boost of healthy fat." },
+  { name: "Popcorn (bag)", meal: "snack", calories: 250, protein: 4, carbs: 30, fat: 14, color: "red", description: "Not a good source of sodium or nutrition." },
+  { name: "Potato Chips (bag)", meal: "snack", calories: 300, protein: 2, carbs: 28, fat: 20, color: "red", description: "High in fat, low in nutrients. Not a good electrolyte source." },
+  { name: "Gummy Worms", meal: "snack", calories: 210, protein: 0, carbs: 50, fat: 0, color: "red", description: "Sugar spike without nutrition." },
+  { name: "Candy Bar", meal: "snack", calories: 240, protein: 2, carbs: 30, fat: 12, color: "red", description: "Empty calories, not filling." }
+];
 
 function renderFoods() {
   const mealLog = document.getElementById("mealLog");
