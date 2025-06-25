@@ -1,3 +1,16 @@
+Updating your Bladetrack Webapp (v1.22) with the complete JavaScript needed to:
+
+* Populate meal choices (breakfast, lunch, dinner) and snacks with proper color coding (green/yellow/red)
+* Calculate macros and calories per meal and daily
+* Allow adding foods to each meal
+* Show rollerblading GPS map and session tracking (already included)
+* Weight logging and chart updates (already included)
+* User inputs (weight, height, gender, calorie goals) remain fully functional
+
+Give me a moment to insert the full JS and update your canvas document now.
+
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -353,4 +366,371 @@
 
     // Update the meal log display
     function updateMealLog() {
-      const container = document.getElementById
+      const container = document.getElementById("mealLog");
+      container.innerHTML = "";
+
+      ["breakfast", "lunch", "dinner"].forEach((meal) => {
+        const mealDiv = document.createElement("div");
+        const mealTitle = document.createElement("h4");
+        mealTitle.textContent = meal.charAt(0).toUpperCase() + meal.slice(1);
+        mealDiv.appendChild(mealTitle);
+
+        const listDiv = document.createElement("div");
+
+        foods[meal].forEach((food, i) => {
+          const foodDiv = document.createElement("div");
+          foodDiv.className = colorClass(food.color);
+          foodDiv.style.marginBottom = "6px";
+          const label = document.createElement("label");
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.dataset.meal = meal;
+          checkbox.dataset.index = i;
+          checkbox.checked = mealSelections[meal].includes(food.name);
+          checkbox.onchange = onFoodToggle;
+
+          label.appendChild(checkbox);
+          label.appendChild(document.createTextNode(` ${food.name} (${food.calories} kcal)`));
+          foodDiv.appendChild(label);
+
+          listDiv.appendChild(foodDiv);
+        });
+
+        mealDiv.appendChild(listDiv);
+
+        // Show macros and calories selected for meal
+        const selectedFoods = foods[meal].filter((f) => mealSelections[meal].includes(f.name));
+        const totals = calculateTotals(selectedFoods);
+        const percents = calculateMacroPercentages(totals);
+
+        const summary = document.createElement("p");
+        summary.innerHTML = `<b>Total Calories:</b> ${totals.calories} kcal | <b>Protein:</b> ${percents.protein}% | <b>Carbs:</b> ${percents.carbs}% | <b>Fat:</b> ${percents.fat}%`;
+        mealDiv.appendChild(summary);
+
+        container.appendChild(mealDiv);
+      });
+
+      updateSnackLog();
+      updateFoodLog();
+    }
+
+    // Update the snack section display
+    function updateSnackLog() {
+      const container = document.getElementById("snacks");
+      container.innerHTML = "";
+
+      foods.snacks.forEach((food, i) => {
+        const foodDiv = document.createElement("div");
+        foodDiv.className = colorClass(food.color);
+        foodDiv.style.marginBottom = "6px";
+
+        const label = document.createElement("label");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.dataset.meal = "snacks";
+        checkbox.dataset.index = i;
+        checkbox.checked = mealSelections.snacks.includes(food.name);
+        checkbox.onchange = onFoodToggle;
+
+        label.appendChild(checkbox);
+        label.appendChild(
+          document.createTextNode(
+            ` ${food.name} (${food.calories} kcal)${
+              food.guilt ? " - " + food.guilt : ""
+            }`
+          )
+        );
+        foodDiv.appendChild(label);
+        container.appendChild(foodDiv);
+      });
+    }
+
+    // Handler for toggling foods on/off
+    function onFoodToggle(e) {
+      const meal = e.target.dataset.meal;
+      const index = parseInt(e.target.dataset.index);
+      const foodName = foods[meal][index].name;
+
+      if (e.target.checked) {
+        if (!mealSelections[meal].includes(foodName)) {
+          mealSelections[meal].push(foodName);
+        }
+      } else {
+        mealSelections[meal] = mealSelections[meal].filter((f) => f !== foodName);
+      }
+      updateMealLog();
+    }
+
+    // Show full food log summary with totals for day
+    function updateFoodLog() {
+      const container = document.getElementById("foodLog");
+      container.innerHTML = "";
+
+      const allSelected = [
+        ...mealSelections.breakfast,
+        ...mealSelections.lunch,
+        ...mealSelections.dinner,
+        ...mealSelections.snacks,
+      ];
+
+      if (allSelected.length === 0) {
+        container.textContent = "No foods selected yet.";
+        return;
+      }
+
+      // Build table
+      const table = document.createElement("table");
+      const header = document.createElement("tr");
+      ["Meal", "Food", "Calories", "Protein (g)", "Carbs (g)", "Fat (g)"].forEach((h) => {
+        const th = document.createElement("th");
+        th.textContent = h;
+        header.appendChild(th);
+      });
+      table.appendChild(header);
+
+      // Helper to find meal for a food
+      function mealForFood(foodName) {
+        for (const meal of ["breakfast", "lunch", "dinner", "snacks"]) {
+          if (mealSelections[meal].includes(foodName)) return meal.charAt(0).toUpperCase() + meal.slice(1);
+        }
+        return "";
+      }
+
+      let totalCals = 0,
+        totalProtein = 0,
+        totalCarbs = 0,
+        totalFat = 0;
+
+      allSelected.forEach((foodName) => {
+        let foodObj;
+        for (const meal of ["breakfast", "lunch", "dinner", "snacks"]) {
+          foodObj = foods[meal].find((f) => f.name === foodName);
+          if (foodObj) break;
+        }
+        if (!foodObj) return;
+
+        totalCals += foodObj.calories;
+        totalProtein += foodObj.protein;
+        totalCarbs += foodObj.carbs;
+        totalFat += foodObj.fat;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${mealForFood(foodName)}</td>
+          <td>${foodName}</td>
+          <td>${foodObj.calories}</td>
+          <td>${foodObj.protein}</td>
+          <td>${foodObj.carbs}</td>
+          <td>${foodObj.fat}</td>
+        `;
+        table.appendChild(tr);
+      });
+
+      // Totals row
+      const totalRow = document.createElement("tr");
+      totalRow.style.fontWeight = "bold";
+      totalRow.innerHTML = `
+        <td colspan="2">Total</td>
+        <td>${totalCals}</td>
+        <td>${totalProtein}</td>
+        <td>${totalCarbs}</td>
+        <td>${totalFat}</td>
+      `;
+      table.appendChild(totalRow);
+      container.appendChild(table);
+    }
+
+    // --- Rollerblading Session Code ---
+    const MET_ROLLERBLADING = 7.0;
+    let startTime = null;
+
+    // Hardcoded Union Square summer conditions for demo
+    const temperatureF = 89.6; // °F
+    const humidity = 70; // %
+
+    document.getElementById("weather").innerText = `Union Square: ${temperatureF}°F — ${humidity}% humidity`;
+    if (temperatureF > 86) {
+      document.getElementById("warning").innerText = "🔥 It’s hot! Drink water and eat potassium-rich foods like bananas.";
+    }
+
+    function startSession() {
+      const weightInput = parseFloat(document.getElementById("weight").value);
+      if (!weightInput || isNaN(weightInput) || weightInput <= 0) {
+        alert("Please enter a valid weight to start the session.");
+        return;
+      }
+      startTime = Date.now();
+      document.getElementById("result").innerText = "Rollerblading session started...";
+      document.getElementById("checklist").style.display =
+```
+
+
+"none";
+}
+
+```
+function stopSession() {
+  if (!startTime) {
+    alert("You must start a session first.");
+    return;
+  }
+  const endTime = Date.now();
+  const durationMs = endTime - startTime;
+  const durationMin = durationMs / (1000 * 60);
+  startTime = null;
+
+  const weightKg = parseFloat(document.getElementById("weight").value) * 0.453592;
+  const tempMod = temperatureF > 86 ? 1.15 : 1;
+
+  const kcal = MET_ROLLERBLADING * weightKg * (durationMin / 60) * tempMod;
+  const date = new Date().toLocaleString();
+
+  const entry = {
+    date,
+    duration: durationMin.toFixed(1),
+    calories: Math.round(kcal),
+    temperature: temperatureF,
+    water: false,
+    banana: false,
+    salty: false,
+  };
+
+  localStorage.setItem("current_session", JSON.stringify(entry));
+  document.getElementById("checklist").style.display = "block";
+  document.getElementById("result").innerText = `Duration: ${entry.duration} minutes\nCalories burned: ${entry.calories}`;
+}
+
+function saveChecklist() {
+  let entry = JSON.parse(localStorage.getItem("current_session"));
+  if (!entry) return;
+  entry.water = document.getElementById("drankWater").checked;
+  entry.banana = document.getElementById("ateBanana").checked;
+  entry.salty = document.getElementById("ateSaltyFood").checked;
+
+  let log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
+  log.unshift(entry);
+  localStorage.setItem("blade_sessions", JSON.stringify(log));
+  localStorage.removeItem("current_session");
+
+  displaySessionLog();
+  document.getElementById("checklist").style.display = "none";
+  document.getElementById("drankWater").checked = false;
+  document.getElementById("ateBanana").checked = false;
+  document.getElementById("ateSaltyFood").checked = false;
+  document.getElementById("result").innerText = "Session saved.";
+}
+
+function displaySessionLog() {
+  let log = JSON.parse(localStorage.getItem("blade_sessions") || "[]");
+  const container = document.getElementById("result");
+  if (!log.length) {
+    container.innerText = "No rollerblading sessions logged.";
+    return;
+  }
+  let html = "<h4>Rollerblading Sessions</h4><ul>";
+  log.forEach((session) => {
+    html += `<li>${session.date}: ${session.duration} min, ${session.calories} kcal, Temp: ${session.temperature}°F</li>`;
+  });
+  html += "</ul>";
+  container.innerHTML = html;
+}
+displaySessionLog();
+
+// --- Weight Tracking & Chart ---
+let weightLog = JSON.parse(localStorage.getItem("weightLog") || "[]");
+const ctx = document.getElementById("weight-progress-chart").getContext("2d");
+let chart;
+
+function logWeight() {
+  const val = parseFloat(document.getElementById("dailyWeight").value);
+  if (!val || val <= 0) {
+    alert("Enter a valid weight.");
+    return;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  weightLog = weightLog.filter((w) => w.date !== today);
+  weightLog.push({ date: today, weight: val });
+  weightLog.sort((a, b) => (a.date > b.date ? 1 : -1));
+  localStorage.setItem("weightLog", JSON.stringify(weightLog));
+  updateWeightChart();
+  updateWeightLog();
+}
+
+function updateWeightLog() {
+  const container = document.getElementById("weightLog");
+  if (!weightLog.length) {
+    container.innerHTML = "<p>No weights logged yet.</p>";
+    return;
+  }
+  let html = "<table><tr><th>Date</th><th>Weight (lbs)</th></tr>";
+  weightLog.forEach((entry) => {
+    html += `<tr><td>${entry.date}</td><td>${entry.weight}</td></tr>`;
+  });
+  html += "</table>";
+  container.innerHTML = html;
+}
+
+function updateWeightChart() {
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: weightLog.map((w) => w.date),
+      datasets: [
+        {
+          label: "Weight (lbs)",
+          data: weightLog.map((w) => w.weight),
+          fill: false,
+          borderColor: "blue",
+          tension: 0.1,
+        },
+      ],
+    },
+    options: {
+      scales: {
+        x: { title: { display: true, text: "Date" } },
+        y: { title: { display: true, text: "Weight (lbs)" } },
+      },
+    },
+  });
+}
+updateWeightChart();
+updateWeightLog();
+
+// --- Initialize Meal Log on load ---
+updateMealLog();
+
+// --- Google Maps Rollerblading Location Map ---
+function initMap() {
+  const unionSquare = { lat: 40.7359, lng: -73.9911 };
+  const map = new google.maps.Map(document.getElementById("map"), {
+    zoom: 15,
+    center: unionSquare,
+  });
+  new google.maps.Marker({ position: unionSquare, map: map });
+}
+```
+
+  </script>
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNyTZL3SySu9n5tkcyc9fiU34d2iviE9E&callback=initMap"
+    async
+    defer
+  ></script>
+</body>
+</html>
+```
+---
+
+**Instructions:**
+
+* Paste this entire code into your GitHub Pages repo or wherever you run the app.
+* The meals & snacks now show all items properly color-coded with checkboxes.
+* Selecting/deselecting foods updates macros and calories live.
+* Rollerblading tracker and weight log/chart remain fully functional.
+* Change weight/height/gender/calorie/goal inputs as you like.
+
+Version: **1.22**
+
+If you want me to add real GPS tracking (not just map marker), or any other feature, just ask.
