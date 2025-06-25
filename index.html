@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.32</title>
+  <title>BladeTrack Web App v1.33</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.32</h2>
+<h2>BladeTrack Web App v1.33</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
@@ -87,20 +87,20 @@ document.addEventListener("DOMContentLoaded", function() {
 function renderFoods() {
   const meals = ["Breakfast", "Lunch", "Dinner"];
   const foods = [
-    { name: "Banana Baby Food (1 container)", color: "green", meal: "Breakfast" },
-    { name: "Plain Nonfat Yogurt (1 cup)", color: "green", meal: "Breakfast" },
-    { name: "Tofu (102.5g, 1/2 pack)", color: "green", meal: "Breakfast" },
-    { name: "Whey Protein Isolate (1 scoop)", color: "green", meal: "Breakfast" },
-    { name: "Peanut Butter (1 tsp)", color: "green", meal: "Breakfast" },
-    { name: "Whey Protein Isolate (1 scoop)", color: "green", meal: "Lunch" },
-    { name: "Salmon (6 oz)", color: "green", meal: "Lunch" },
-    { name: "Salmon (6 oz)", color: "green", meal: "Dinner" },
-    { name: "Chicken Breast (4 oz)", color: "green", meal: "Lunch" },
-    { name: "Chicken Breast (4 oz)", color: "green", meal: "Dinner" },
-    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", color: "green", meal: "Breakfast" },
-    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", color: "green", meal: "Lunch" },
-    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", color: "green", meal: "Dinner" },
-    { name: "Collard Greens (1 cup)", color: "green", meal: "Dinner" }
+    { name: "Banana Baby Food (1 container) – easy on digestion", color: "green", meal: "Breakfast" },
+    { name: "Plain Nonfat Yogurt (1 cup) – low fat, protein boost", color: "green", meal: "Breakfast" },
+    { name: "Tofu (102.5g, 1/2 pack) – plant protein", color: "green", meal: "Breakfast" },
+    { name: "Whey Protein Isolate (1 scoop) – high protein, fast absorption", color: "green", meal: "Breakfast" },
+    { name: "Peanut Butter (1 tsp) – healthy fats in moderation", color: "green", meal: "Breakfast" },
+    { name: "Whey Protein Isolate (1 scoop) – high protein, fast absorption", color: "green", meal: "Lunch" },
+    { name: "Salmon (6 oz) – omega-3s and satiety", color: "green", meal: "Lunch" },
+    { name: "Salmon (6 oz) – omega-3s and satiety", color: "green", meal: "Dinner" },
+    { name: "Chicken Breast (4 oz) – lean protein", color: "green", meal: "Lunch" },
+    { name: "Chicken Breast (4 oz) – lean protein", color: "green", meal: "Dinner" },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts) – fiber, healthy fats", color: "green", meal: "Breakfast" },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts) – fiber, healthy fats", color: "green", meal: "Lunch" },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts) – fiber, healthy fats", color: "green", meal: "Dinner" },
+    { name: "Collard Greens (1 cup) – high in calcium and fiber", color: "green", meal: "Dinner" }
   ];
 
   const log = document.getElementById("mealLog");
@@ -121,10 +121,10 @@ function renderFoods() {
   const snackList = document.getElementById("snacks");
   snackList.innerHTML = "";
   const snacks = [
-    { name: "Potato Chips – Not a good sodium source", color: "red" },
-    { name: "Gummy Worms – Sugar high, not filling", color: "red" },
+    { name: "Potato Chips – Bad sodium source, fried fats", color: "red" },
+    { name: "Gummy Worms – Sugar high, zero nutrients", color: "red" },
     { name: "Candy Bar – Empty calories, low satiety", color: "red" },
-    { name: "Movie Popcorn – Bad sodium, low nutrients", color: "red" }
+    { name: "Movie Popcorn – Excess salt, bad for hydration", color: "red" }
   ];
   snacks.forEach(snack => {
     const btn = document.createElement("button");
