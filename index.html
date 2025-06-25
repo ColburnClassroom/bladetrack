@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.31</title>
+  <title>BladeTrack Web App v1.32</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -22,7 +22,7 @@
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.31</h2>
+<h2>BladeTrack Web App v1.32</h2>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
 <p>Weight (lbs): <input type="number" id="weight" value="175"></p>
@@ -67,7 +67,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Disable Google Maps in sandboxed environments to avoid RefererNotAllowedMapError
 function initMap() {
   if (location.hostname.includes("oaiusercontent.com")) {
     document.getElementById("map").innerHTML = "<p><em>Map disabled in sandbox environment.</em></p>";
@@ -87,16 +86,21 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function renderFoods() {
   const meals = ["Breakfast", "Lunch", "Dinner"];
-  const colors = { green: "Healthy", yellow: "Moderate", red: "Unhealthy" };
   const foods = [
+    { name: "Banana Baby Food (1 container)", color: "green", meal: "Breakfast" },
+    { name: "Plain Nonfat Yogurt (1 cup)", color: "green", meal: "Breakfast" },
+    { name: "Tofu (102.5g, 1/2 pack)", color: "green", meal: "Breakfast" },
+    { name: "Whey Protein Isolate (1 scoop)", color: "green", meal: "Breakfast" },
     { name: "Peanut Butter (1 tsp)", color: "green", meal: "Breakfast" },
-    { name: "Whey Protein Isolate", color: "green", meal: "Breakfast" },
-    { name: "Whey Protein Isolate", color: "green", meal: "Lunch" },
-    { name: "Salmon", color: "green", meal: "Lunch" },
-    { name: "Salmon", color: "green", meal: "Dinner" },
-    { name: "Chicken Breast", color: "green", meal: "Lunch" },
-    { name: "Chicken Breast", color: "green", meal: "Dinner" },
-    { name: "Collard Greens (1 cup)", color: "green", meal: "Dinner" },
+    { name: "Whey Protein Isolate (1 scoop)", color: "green", meal: "Lunch" },
+    { name: "Salmon (6 oz)", color: "green", meal: "Lunch" },
+    { name: "Salmon (6 oz)", color: "green", meal: "Dinner" },
+    { name: "Chicken Breast (4 oz)", color: "green", meal: "Lunch" },
+    { name: "Chicken Breast (4 oz)", color: "green", meal: "Dinner" },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", color: "green", meal: "Breakfast" },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", color: "green", meal: "Lunch" },
+    { name: "Mixed Nuts (5 each: almonds, pistachios, cashews, walnuts)", color: "green", meal: "Dinner" },
+    { name: "Collard Greens (1 cup)", color: "green", meal: "Dinner" }
   ];
 
   const log = document.getElementById("mealLog");
@@ -119,7 +123,8 @@ function renderFoods() {
   const snacks = [
     { name: "Potato Chips – Not a good sodium source", color: "red" },
     { name: "Gummy Worms – Sugar high, not filling", color: "red" },
-    { name: "Candy Bar – Empty calories, low satiety", color: "red" }
+    { name: "Candy Bar – Empty calories, low satiety", color: "red" },
+    { name: "Movie Popcorn – Bad sodium, low nutrients", color: "red" }
   ];
   snacks.forEach(snack => {
     const btn = document.createElement("button");
@@ -132,7 +137,7 @@ function renderFoods() {
 
 function logFood(meal, itemName) {
   console.log(`Logged food: ${meal} - ${itemName}`);
-  // Extend this to track calories/macros
+  // TODO: Extend this to update food log with calories/macros
 }
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNyTZL3SySu9n5tkcyc9fiU34d2iviE9E&callback=initMap" async defer></script>
