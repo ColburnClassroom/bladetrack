@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.58</title>
+  <title>BladeTrack Web App v1.49</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -20,11 +20,10 @@
     .meal-title { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
     .meal-log-entry { font-size: 14px; margin-left: 10px; }
   </style>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.58</h2>
+<h2>BladeTrack Web App v1.49</h2>
 <p><strong>Note:</strong> The only way to lose weight is to maintain a caloric deficit.</p>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
@@ -43,18 +42,21 @@
 <h3>Meal Tracking</h3>
 <div class="meal-section" id="breakfast-section">
   <div class="meal-title">Breakfast</div>
-  <button class="food-button green" onclick="logFood('Breakfast', 'Greek Yogurt', 100, 10, 6, 0)">Greek Yogurt (100 cal)</button>
+  <button class="food-button green" onclick="logFood('Breakfast', 'Plain Yogurt', 100, 10, 6, 0)">Plain Yogurt (100 cal)</button>
   <button class="food-button green" onclick="logFood('Breakfast', 'Banana Baby Food', 100, 1, 22, 0)">Banana Baby Food (100 cal)</button>
+  <button class="food-button green" onclick="logFood('Breakfast', 'Tofu (102.5g)', 200, 20, 4, 12)">Tofu (102.5g, 200 cal)</button>
   <div id="log-breakfast"></div>
 </div>
 <div class="meal-section" id="lunch-section">
   <div class="meal-title">Lunch</div>
   <button class="food-button green" onclick="logFood('Lunch', 'Salmon (6 oz)', 367, 34, 0, 23)">Salmon (6 oz, 367 cal)</button>
+  <button class="food-button green" onclick="logFood('Lunch', 'Mixed Greens Salad', 80, 2, 10, 3)">Mixed Greens Salad (80 cal)</button>
   <div id="log-lunch"></div>
 </div>
 <div class="meal-section" id="snacks-section">
   <div class="meal-title">Snacks</div>
-  <button class="food-button red" onclick="logFood('Snacks', 'Gummy Worms', 150, 0, 36, 0)">Gummy Worms (150 cal) - Spike blood sugar quickly with no nutrition</button>
+  <button class="food-button red" onclick="logFood('Snacks', 'Popcorn', 150, 2, 22, 6)">Popcorn (150 cal) - Not a good electrolyte source</button>
+  <button class="food-button red" onclick="logFood('Snacks', 'Potato Chips', 160, 2, 15, 10)">Potato Chips (160 cal) - Low in essential nutrients</button>
   <div id="log-snacks"></div>
 </div>
 <div class="meal-section" id="dinner-section">
@@ -66,86 +68,19 @@
 <div id="mealTotals"></div>
 <div id="dayTotals">
   <p><strong>Calories Consumed</strong>: <span id="totalCalories">0</span> kcal</p>
-  <p><strong>Calories Burned from Rollerblading</strong>: <span id="bladeCalories">0</span> kcal</p>
-  <p><strong>Net Calories (Base - Burned)</strong>: <span id="netCalories">0</span> kcal</p>
 </div>
 
-<h3>Rollerblading Session Tracker</h3>
-<p>Start time: <input type="time" id="bladeStart"> End time: <input type="time" id="bladeEnd"> Distance (miles): <input type="number" id="bladeMiles" step="0.1"></p>
-<button onclick="calculateBladeCalories()">Calculate Blade Calories</button>
-<div id="bladeResult"></div>
-<div id="weather"></div>
-<div id="warning" class="hot-warning"></div>
-<div id="map"></div>
-
-<h3>Weight Tracking & Progress</h3>
-<p>Log Today's Weight (lbs): <input type="number" id="dailyWeight"><button onclick="logWeight()">Log Weight</button></p>
-<canvas id="weight-progress-chart" width="600" height="200"></canvas>
-<div id="weightLog"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
-function updateWeather() {
-  fetch("https://api.open-meteo.com/v1/forecast?latitude=40.71&longitude=-74.01&current_weather=true")
-    .then(res => res.json())
-    .then(data => {
-      const tempC = data.current_weather.temperature;
-      const tempF = Math.round(tempC * 9/5 + 32);
-      document.getElementById("weather").textContent = `Current NYC Temp: ${tempF}°F`;
-      document.getElementById("warning").textContent = tempF >= 86 ?
-        "Hydration critical. Consider LMNT. Avoid SmartWater. VenturePal not enough." :
-        "Stay hydrated. LMNT or Pickle Shots preferred. Avoid SmartWater.";
-    });
-}
-
-function initMap() {
-  const map = L.map('map').setView([40.7359, -73.9911], 13);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-  }).addTo(map);
-  L.marker([40.7359, -73.9911]).addTo(map).bindPopup('Rollerblading Start Point').openPopup();
-}
-
 let caloriesConsumed = 0;
-let bladeCalories = 0;
-
-function updateNetCalories() {
-  document.getElementById("totalCalories").textContent = caloriesConsumed;
-  document.getElementById("bladeCalories").textContent = bladeCalories;
-  document.getElementById("netCalories").textContent = caloriesConsumed - bladeCalories;
-}
-
-function calculateBladeCalories() {
-  const weight = parseFloat(document.getElementById("weight").value);
-  const miles = parseFloat(document.getElementById("bladeMiles").value);
-  const start = document.getElementById("bladeStart").value;
-  const end = document.getElementById("bladeEnd").value;
-  if (!weight || !miles || !start || !end) return;
-  const MET = 7;
-  const startTime = new Date(`1970-01-01T${start}:00`);
-  const endTime = new Date(`1970-01-01T${end}:00`);
-  const duration = (endTime - startTime) / 1000 / 60 / 60;
-  bladeCalories = Math.round(0.25 * MET * 3.5 * weight / 2.2 * duration / 200);
-  document.getElementById("bladeResult").textContent = `Calories burned: ${bladeCalories}`;
-  updateNetCalories();
-}
-
 function logFood(meal, name, cals, protein, carbs, fat) {
   caloriesConsumed += cals;
-  updateNetCalories();
+  document.getElementById("totalCalories").textContent = caloriesConsumed;
   const entry = document.createElement("div");
   entry.className = "meal-log-entry";
   entry.textContent = `${name} (${cals} cal)`;
   document.getElementById(`log-${meal.toLowerCase()}`).appendChild(entry);
 }
-
-function logWeight() {
-  // placeholder
-}
-
-updateWeather();
-window.onload = initMap;
 </script>
+
 </body>
 </html>
