@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.54</title>
+  <title>BladeTrack Web App v1.55</title>
   <style>
     body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
@@ -28,7 +28,7 @@
 </head>
 <body>
 
-<h2>BladeTrack Web App v1.54</h2>
+<h2>BladeTrack Web App v1.55</h2>
 <p><strong>Note:</strong> The only way to lose weight is to maintain a caloric deficit.</p>
 <p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
 
@@ -45,6 +45,39 @@
 <p>Weight Loss Goal (lbs per week): <input type="number" id="weeklyLossGoal" value="2"></p>
 
 <h3>Meal Tracking</h3>
+<div class="meal-section" id="breakfast-section">
+  <div class="meal-title">Breakfast</div>
+  <button class="food-button green" onclick="logFood('Breakfast', 'Whey Protein Isolate', 110, 25, 2, 1)">Whey Protein Isolate (110 cal)</button>
+  <button class="food-button green" onclick="logFood('Breakfast', 'Plain Nonfat Yogurt', 100, 10, 15, 0)">Plain Nonfat Yogurt (100 cal)</button>
+  <button class="food-button green" onclick="logFood('Breakfast', 'Tofu (102.5g)', 200, 20, 5, 12)">Tofu (200 cal)</button>
+  <button class="food-button green" onclick="logFood('Breakfast', 'Banana Baby Food', 100, 1, 25, 0)">Banana Baby Food (100 cal)</button>
+  <button class="food-button green" onclick="logFood('Breakfast', 'Peanut Butter (1 tsp)', 32, 1, 1, 3)">Peanut Butter (1 tsp, 32 cal)</button>
+</div>
+
+<div class="meal-section" id="lunch-section">
+  <div class="meal-title">Lunch</div>
+  <button class="food-button green" onclick="logFood('Lunch', 'Salmon (6 oz)', 367, 39, 0, 22)">Salmon (6 oz, 367 cal)</button>
+  <button class="food-button green" onclick="logFood('Lunch', 'Chicken Breast (6 oz)', 280, 53, 0, 6)">Chicken Breast (6 oz, 280 cal)</button>
+  <button class="food-button green" onclick="logFood('Lunch', 'Whey Protein Isolate', 110, 25, 2, 1)">Whey Protein Isolate (110 cal)</button>
+  <button class="food-button green" onclick="logFood('Lunch', 'Mixed Green Salad', 35, 2, 5, 0)">Mixed Green Salad (35 cal)</button>
+  <button class="food-button green" onclick="logFood('Lunch', 'Avocado (small)', 220, 3, 12, 21)">Avocado (small, 220 cal)</button>
+</div>
+
+<div class="meal-section" id="snacks-section">
+  <div class="meal-title">Snacks</div>
+  <button class="food-button red" onclick="logFood('Snacks', 'Potato Chips', 160, 2, 15, 10)">Potato Chips (160 cal) - Not a good source of electrolytes.</button>
+  <button class="food-button red" onclick="logFood('Snacks', 'Popcorn', 150, 3, 18, 8)">Popcorn (150 cal) - Not filling or nutritious.</button>
+  <button class="food-button red" onclick="logFood('Snacks', 'Gummy Worms', 140, 0, 35, 0)">Gummy Worms (140 cal) - Sugar high, no nutrients.</button>
+  <button class="food-button red" onclick="logFood('Snacks', 'Candy Bar', 250, 2, 28, 14)">Candy Bar (250 cal) - Sugar spike, not filling.</button>
+</div>
+
+<div class="meal-section" id="dinner-section">
+  <div class="meal-title">Dinner</div>
+  <button class="food-button green" onclick="logFood('Dinner', 'Salmon (6 oz)', 367, 39, 0, 22)">Salmon (6 oz, 367 cal)</button>
+  <button class="food-button green" onclick="logFood('Dinner', 'Chicken Breast (6 oz)', 280, 53, 0, 6)">Chicken Breast (6 oz, 280 cal)</button>
+  <button class="food-button green" onclick="logFood('Dinner', 'Mixed Nuts (20 pcs)', 230, 5, 9, 20)">Mixed Nuts (230 cal)</button>
+</div>
+
 <div id="mealLog"></div>
 <div id="foodSummary"></div>
 <div id="mealTotals"></div>
@@ -114,6 +147,15 @@ function calculateBladeCalories() {
   bladeCalories = Math.round(0.25 * MET * 3.5 * weight / 2.2 * duration / 200);
   document.getElementById("bladeResult").textContent = `Calories burned: ${bladeCalories}`;
   updateNetCalories();
+}
+
+function logFood(meal, name, cals, protein, carbs, fat) {
+  caloriesConsumed += cals;
+  updateNetCalories();
+  const logDiv = document.getElementById("mealLog");
+  const entry = document.createElement("div");
+  entry.textContent = `${meal}: ${name} (${cals} cal)`;
+  logDiv.appendChild(entry);
 }
 
 function logWeight() {
