@@ -1,86 +1,484 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BladeTrack Web App v1.49</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
-    h4 { font-size: 20px; margin-top: 20px; }
-    .hot-warning { color: orange; font-weight: bold; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
-    th { background-color: #f9f9f9; }
-    .food-button { display: block; width: 100%; margin: 5px 0; padding: 10px; font-size: 14px; border-radius: 5px; border: none; text-align: left; cursor: pointer; }
-    .green { background-color: #e0f7e9; border-left: 5px solid green; }
-    .yellow { background-color: #fff9e6; border-left: 5px solid orange; }
-    .red { background-color: #fdecea; border-left: 5px solid red; }
-    .meal-section { margin-top: 20px; }
-    .meal-title { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
-    .meal-log-entry { font-size: 14px; margin-left: 10px; }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BladeTrack Web App v1.49</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+  button, input, label, select { margin: 10px 0; padding: 12px; font-size: 16px; }
+  h4, h3 { font-size: 20px; margin-top: 20px; }
+  .hot-warning { color: orange; font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+  th, td { border: 1px solid #ccc; padding: 8px; font-size: 14px; text-align: center; }
+  th { background-color: #f9f9f9; }
+  #map { height: 300px; margin: 20px 0; }
+  .food-button { 
+    display: block; 
+    width: 100%; 
+    margin: 5px 0; 
+    padding: 10px; 
+    font-size: 14px; 
+    border-radius: 5px; 
+    border: none; 
+    text-align: left; 
+    cursor: pointer; 
+  }
+  .green { background-color: #e0f7e9; border-left: 5px solid green; }
+  .yellow { background-color: #fff9e6; border-left: 5px solid orange; }
+  .red { background-color: #fdecea; border-left: 5px solid red; }
+  .selected { font-weight: bold; opacity: 0.8; }
+  .meal-section { margin-bottom: 30px; }
+  .food-list { margin-top: 10px; font-size: 14px; }
+  .food-log-item { margin: 3px 0; }
+  .totals { font-weight: bold; margin-top: 15px; }
+  .note {
+    background: #fffbdd;
+    border-left: 6px solid #ffeb3b;
+    padding: 10px 15px;
+    margin-bottom: 20px;
+    font-weight: bold;
+  }
+  input[type="number"] { width: 80px; }
+  select { width: 150px; }
+</style>
 </head>
 <body>
 
 <h2>BladeTrack Web App v1.49</h2>
-<p><strong>Note:</strong> The only way to lose weight is to maintain a caloric deficit.</p>
-<p>Track your calories, macros, rollerblading sessions, and weight loss progress.</p>
+<div class="note">The only way to lose weight is to maintain a caloric deficit.</div>
 
-<p>Weight (lbs): <input type="number" id="weight" value="175"></p>
-<p>Height: <input type="number" id="heightFt" value="5"> ft <input type="number" id="heightIn" value="10"> in</p>
-<p>Gender:
-  <select id="gender">
+<p>
+  Weight (lbs): <input type="number" id="weight" value="175" min="50" max="600" step="1" onchange="updateCalorieGoalAuto()" />
+</p>
+<p>
+  Height: <input type="number" id="heightFt" value="5" min="3" max="8" onchange="updateCalorieGoalAuto()" /> ft
+  <input type="number" id="heightIn" value="10" min="0" max="11" onchange="updateCalorieGoalAuto()" /> in
+</p>
+<p>
+  Gender:
+  <select id="gender" onchange="updateCalorieGoalAuto()">
     <option value="male">Male</option>
     <option value="female">Female</option>
     <option value="nonbinary">Nonbinary</option>
   </select>
 </p>
-<p>Daily Calorie Goal: <input type="number" id="calorieGoal" value="1500"> calories</p>
-<p>Weight Loss Goal (lbs per week): <input type="number" id="weeklyLossGoal" value="2"></p>
+<p>
+  Weekly Weight Loss Goal (lbs per week): 
+  <input type="number" id="weeklyLossGoal" value="2" min="0" max="5" step="0.1" onchange="updateCalorieGoalAuto()" />
+</p>
 
+<p>
+  Daily Calorie Goal: <input type="number" id="calorieGoal" value="1500" min="1000" max="4000" step="10" oninput="updateWeeklyGoalAuto()" /> calories
+</p>
+
+<p>Target Calorie Distribution (% total calories): <br/>
+  Breakfast <input type="number" id="pctBreakfast" value="25" min="0" max="100" style="width:60px" onchange="validateDistribution()" />% &nbsp;
+  Lunch <input type="number" id="pctLunch" value="40" min="0" max="100" style="width:60px" onchange="validateDistribution()" />% &nbsp;
+  Snacks <input type="number" id="pctSnacks" value="10" min="0" max="100" style="width:60px" onchange="validateDistribution()" />% &nbsp;
+  Dinner <input type="number" id="pctDinner" value="25" min="0" max="100" style="width:60px" onchange="validateDistribution()" />%
+</p>
+
+<!-- Meal Tracking -->
 <h3>Meal Tracking</h3>
-<div class="meal-section" id="breakfast-section">
-  <div class="meal-title">Breakfast</div>
-  <button class="food-button green" onclick="logFood('Breakfast', 'Plain Yogurt', 100, 10, 6, 0)">Plain Yogurt (100 cal)</button>
-  <button class="food-button green" onclick="logFood('Breakfast', 'Banana Baby Food', 100, 1, 22, 0)">Banana Baby Food (100 cal)</button>
-  <button class="food-button green" onclick="logFood('Breakfast', 'Tofu (102.5g)', 200, 20, 4, 12)">Tofu (102.5g, 200 cal)</button>
-  <div id="log-breakfast"></div>
-</div>
-<div class="meal-section" id="lunch-section">
-  <div class="meal-title">Lunch</div>
-  <button class="food-button green" onclick="logFood('Lunch', 'Salmon (6 oz)', 367, 34, 0, 23)">Salmon (6 oz, 367 cal)</button>
-  <button class="food-button green" onclick="logFood('Lunch', 'Mixed Greens Salad', 80, 2, 10, 3)">Mixed Greens Salad (80 cal)</button>
-  <div id="log-lunch"></div>
-</div>
-<div class="meal-section" id="snacks-section">
-  <div class="meal-title">Snacks</div>
-  <button class="food-button red" onclick="logFood('Snacks', 'Popcorn', 150, 2, 22, 6)">Popcorn (150 cal) - Not a good electrolyte source</button>
-  <button class="food-button red" onclick="logFood('Snacks', 'Potato Chips', 160, 2, 15, 10)">Potato Chips (160 cal) - Low in essential nutrients</button>
-  <div id="log-snacks"></div>
-</div>
-<div class="meal-section" id="dinner-section">
-  <div class="meal-title">Dinner</div>
-  <button class="food-button green" onclick="logFood('Dinner', 'Grilled Chicken Breast (6 oz)', 276, 50, 0, 6)">Grilled Chicken Breast (6 oz, 276 cal)</button>
-  <div id="log-dinner"></div>
+
+<div id="mealTracking">
+
+  <div class="meal-section" id="breakfastSection">
+    <h4>Breakfast</h4>
+    <div id="breakfastButtons"></div>
+    <div id="breakfastSelected" class="food-list"></div>
+  </div>
+
+  <div class="meal-section" id="lunchSection">
+    <h4>Lunch</h4>
+    <div id="lunchButtons"></div>
+    <div id="lunchSelected" class="food-list"></div>
+  </div>
+
+  <div class="meal-section" id="snacksSection">
+    <h4>Snacks (Unhealthy Choices)</h4>
+    <div id="snacksButtons"></div>
+    <div id="snacksSelected" class="food-list"></div>
+  </div>
+
+  <div class="meal-section" id="dinnerSection">
+    <h4>Dinner</h4>
+    <div id="dinnerButtons"></div>
+    <div id="dinnerSelected" class="food-list"></div>
+  </div>
+
 </div>
 
-<div id="mealTotals"></div>
-<div id="dayTotals">
-  <p><strong>Calories Consumed</strong>: <span id="totalCalories">0</span> kcal</p>
-</div>
+<div id="mealTotals" class="totals"></div>
+<div id="dayTotals" class="totals"></div>
 
+<!-- Rollerblading Session -->
+<h3>Rollerblading Session Tracker</h3>
+<p>
+  Start time: <input type="time" id="bladeStart" />
+  End time: <input type="time" id="bladeEnd" />
+  Distance (miles): <input type="number" id="bladeMiles" step="0.1" />
+</p>
+<button onclick="calculateBladeCalories()">Calculate Calories Burned</button>
+<div id="bladeResult"></div>
+<div id="weather"></div>
+<div id="warning" class="hot-warning"></div>
+
+<!-- Weight Tracking -->
+<h3>Weight Tracking & Progress</h3>
+<p>
+  Log Today's Weight (lbs): <input type="number" id="dailyWeight" />
+  <button onclick="logWeight()">Log Weight</button>
+</p>
+<canvas id="weight-progress-chart" width="600" height="200"></canvas>
+<div id="weightLog"></div>
+
+<!-- Food Log Summary -->
+<h3>Food Log Summary</h3>
+<div id="foodLog"></div>
+
+<!-- Macro Diet Benchmarks -->
+<h3>Macro Diet Benchmarks</h3>
+<table>
+  <tr><th>Diet Type</th><th>Protein %</th><th>Carb %</th><th>Fat %</th></tr>
+  <tr><td>Balanced</td><td>30%</td><td>40%</td><td>30%</td></tr>
+  <tr><td>High-Protein, Low-Carb (High Energy, High Satiety)</td><td>40%</td><td>25%</td><td>35%</td></tr>
+  <tr><td>High-Carb (Vegan, Endurance)</td><td>15%</td><td>60%</td><td>25%</td></tr>
+  <tr><td>High-Fat (Keto)</td><td>20%</td><td>10%</td><td>70%</td></tr>
+  <tr><td>Fitness Enthusiasts (High-Protein)</td><td>35%</td><td>35%</td><td>30%</td></tr>
+</table>
+
+<!-- Electrolyte Comparison -->
+<h3>Electrolyte Comparison</h3>
+<table>
+  <tr><th>Product</th><th>Sodium (mg)</th><th>Potassium (mg)</th><th>Magnesium (mg)</th><th>Notes</th></tr>
+  <tr><td>LMNT</td><td>1000</td><td>200</td><td>60</td><td>Excellent balance</td></tr>
+  <tr><td>Pickle Shot</td><td>900</td><td>0</td><td>0</td><td>High sodium only</td></tr>
+  <tr><td>VenturePal</td><td>100</td><td>50</td><td>20</td><td>Weak overall; not recommended</td></tr>
+  <tr><td>SmartWater</td><td>10</td><td>2</td><td>1</td><td>Practically negligible</td></tr>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let caloriesConsumed = 0;
-function logFood(meal, name, cals, protein, carbs, fat) {
-  caloriesConsumed += cals;
-  document.getElementById("totalCalories").textContent = caloriesConsumed;
-  const entry = document.createElement("div");
-  entry.className = "meal-log-entry";
-  entry.textContent = `${name} (${cals} cal)`;
-  document.getElementById(`log-${meal.toLowerCase()}`).appendChild(entry);
-}
+  // Food Data with macros and colors and benefits/warnings
+  const foodData = {
+    breakfast: [
+      {name:"Banana Baby Food (1 container)", cal:100, protein:1, carbs:25, fat:0, color:"green", benefit:"Quick energy from carbs, easy to digest."},
+      {name:"Peanut Butter (1 tsp, smooth, unsalted)", cal:32, protein:1.3, carbs:1, fat:2.7, color:"green", benefit:"Good source of healthy fats and protein."},
+      {name:"Tofu (102.5 g)", cal:200, protein:21, carbs:2, fat:12, color:"green", benefit:"High protein and healthy fats, great vegetarian option."},
+      {name:"Plain Nonfat Yogurt (6 oz)", cal:100, protein:10, carbs:6, fat:0, color:"green", benefit:"Good protein and probiotics."},
+      {name:"Whey Protein Isolate (1 scoop)", cal:110, protein:25, carbs:1, fat:0, color:"green", benefit:"Fast-absorbing, high protein."},
+      {name:"Mixed Nuts (5 each pistachios, almonds, cashews, walnuts)", cal:230, protein:6, carbs:8, fat:20, color:"green", benefit:"Good fats, protein, and fiber for satiety."},
+      {name:"Avocado (small)", cal:220, protein:3, carbs:12, fat:20, color:"green", benefit:"Rich in healthy fats and potassium."}
+    ],
+    lunch: [
+      {name:"Salmon (6 oz)", cal:367, protein:39, carbs:0, fat:23, color:"green", benefit:"Rich in omega-3 fatty acids, very filling."},
+      {name:"Chicken Breast (6 oz)", cal:280, protein:53, carbs:0, fat:6, color:"green", benefit:"Lean protein, great for muscle maintenance."},
+      {name:"Mixed Green Salad (1 cup)", cal:15, protein:1, carbs:3, fat:0, color:"green", benefit:"Low calorie, nutrient dense."},
+      {name:"Whey Protein Isolate (1 scoop)", cal:110, protein:25, carbs:1, fat:0, color:"green", benefit:"Fast-absorbing, high protein."},
+      {name:"Avocado (small)", cal:220, protein:3, carbs:12, fat:20, color:"green", benefit:"Rich in healthy fats and potassium."},
+      {name:"Mixed Nuts (5 each pistachios, almonds, cashews, walnuts)", cal:230, protein:6, carbs:8, fat:20, color:"green", benefit:"Good fats, protein, and fiber for satiety."}
+    ],
+    snacks: [
+      {name:"Potato Chips (1 oz)", cal:150, protein:2, carbs:15, fat:10, color:"red", warning:"High in unhealthy fats and salt; not good for electrolyte balance."},
+      {name:"Popcorn (1 oz, buttered)", cal:160, protein:2, carbs:14, fat:10, color:"red", warning:"High fat, low nutrition; poor sodium source."},
+      {name:"Gummy Worms (1 oz)", cal:140, protein:0, carbs:35, fat:0, color:"red", warning:"Sugar high but not filling; causes crashes."},
+      {name:"Candy Bar (1 bar)", cal:210, protein:2, carbs:30, fat:10, color:"red", warning:"Empty calories, sugar spike, low satiety."}
+    ],
+    dinner: [
+      {name:"Salmon (6 oz)", cal:367, protein:39, carbs:0, fat:23, color:"green", benefit:"Rich in omega-3 fatty acids, very filling."},
+      {name:"Chicken Breast (6 oz)", cal:280, protein:53, carbs:0, fat:6, color:"green", benefit:"Lean protein, great for muscle maintenance."},
+      {name:"Mixed Nuts (5 each pistachios, almonds, cashews, walnuts)", cal:230, protein:6, carbs:8, fat:20, color:"green", benefit:"Good fats, protein, and fiber for satiety."}
+    ]
+  };
+
+  // Selected foods per meal (track by name)
+  const selectedFoods = {
+    breakfast: new Set(),
+    lunch: new Set(),
+    snacks: new Set(),
+    dinner: new Set()
+  };
+
+  // Create buttons for foods
+  function createFoodButtons() {
+    for (const meal of ["breakfast","lunch","snacks","dinner"]) {
+      const container = document.getElementById(meal + "Buttons");
+      container.innerHTML = "";
+      foodData[meal].forEach(food => {
+        const btn = document.createElement("button");
+        btn.textContent = `${food.name} (${food.cal} cal) - ${food.benefit || food.warning || ""}`;
+        btn.className = `food-button ${food.color}`;
+        btn.onclick = () => toggleFood(meal, food.name);
+        container.appendChild(btn);
+      });
+    }
+  }
+
+  // Toggle food selected/unselected
+  function toggleFood(meal, foodName) {
+    if (selectedFoods[meal].has(foodName)) {
+      selectedFoods[meal].delete(foodName);
+    } else {
+      selectedFoods[meal].add(foodName);
+    }
+    updateMealSelectedDisplay(meal);
+    updateTotalsDisplay();
+  }
+
+  // Update displayed selected foods below buttons
+  function updateMealSelectedDisplay(meal) {
+    const displayDiv = document.getElementById(meal + "Selected");
+    displayDiv.innerHTML = "";
+    if (selectedFoods[meal].size === 0) {
+      displayDiv.textContent = "(No foods selected)";
+      return;
+    }
+    selectedFoods[meal].forEach(name => {
+      const food = foodData[meal].find(f => f.name === name);
+      if (!food) return;
+      const div = document.createElement("div");
+      div.className = "food-log-item";
+      div.textContent = `${food.name} - ${food.cal} cal (P: ${food.protein}g, C: ${food.carbs}g, F: ${food.fat}g)`;
+      displayDiv.appendChild(div);
+    });
+  }
+
+  // Calculate and display meal totals and day totals (calories + macros)
+  function updateTotalsDisplay() {
+    const mealTotalsDiv = document.getElementById("mealTotals");
+    const dayTotalsDiv = document.getElementById("dayTotals");
+
+    let dayTotals = {cal:0, protein:0, carbs:0, fat:0};
+
+    const mealTotalsTexts = [];
+    for (const meal of ["breakfast","lunch","snacks","dinner"]) {
+      let mealTotal = {cal:0, protein:0, carbs:0, fat:0};
+      selectedFoods[meal].forEach(name => {
+        const food = foodData[meal].find(f => f.name === name);
+        if (!food) {
+          // fallback to check all meals just in case (shouldn't happen)
+          for (const m of Object.keys(foodData)) {
+            const f = foodData[m].find(x => x.name === name);
+            if (f) {
+              mealTotal.cal += f.cal; mealTotal.protein += f.protein; mealTotal.carbs += f.carbs; mealTotal.fat += f.fat;
+              break;
+            }
+          }
+        } else {
+          mealTotal.cal += food.cal;
+          mealTotal.protein += food.protein;
+          mealTotal.carbs += food.carbs;
+          mealTotal.fat += food.fat;
+        }
+      });
+      dayTotals.cal += mealTotal.cal;
+      dayTotals.protein += mealTotal.protein;
+      dayTotals.carbs += mealTotal.carbs;
+      dayTotals.fat += mealTotal.fat;
+
+      mealTotalsTexts.push(
+        `${meal.charAt(0).toUpperCase() + meal.slice(1)} total: ${mealTotal.cal} cal (P: ${mealTotal.protein}g, C: ${mealTotal.carbs}g, F: ${mealTotal.fat}g)`
+      );
+    }
+
+    mealTotalsDiv.innerHTML = mealTotalsTexts.join("<br />");
+
+    // Calculate macro % of total calories (protein & carbs = 4 cal/g, fat=9 cal/g)
+    const totalCalFromMacros = dayTotals.protein*4 + dayTotals.carbs*4 + dayTotals.fat*9;
+    if (totalCalFromMacros === 0) {
+      dayTotalsDiv.innerHTML = "Select foods to see total daily calories and macro %.";
+      return;
+    }
+
+    const pctProtein = Math.round((dayTotals.protein*4 / totalCalFromMacros) * 100);
+    const pctCarbs = Math.round((dayTotals.carbs*4 / totalCalFromMacros) * 100);
+    const pctFat = Math.round((dayTotals.fat*9 / totalCalFromMacros) * 100);
+
+    // Adjusted daily calorie goal adding calories burned rollerblading
+    const baseGoal = parseFloat(document.getElementById("calorieGoal").value) || 1500;
+    const adjustedGoal = baseGoal + bladeCalories;
+
+    // Net calories after rollerblading calories burned
+    const netGoal = baseGoal - bladeCalories;
+
+    dayTotalsDiv.innerHTML = `
+      Total Day Calories (selected foods): <strong>${dayTotals.cal}</strong> kcal<br />
+      Macro Percentages: Protein ${pctProtein}%, Carbs ${pctCarbs}%, Fat ${pctFat}%<br />
+      Base Calorie Goal: <strong>${baseGoal}</strong> kcal<br />
+      Rollerblading Calories Burned (modest): <strong>${Math.round(bladeCalories)}</strong> kcal<br />
+      <strong>Adjusted Calorie Goal (Base + Burned):</strong> ${Math.round(adjustedGoal)} kcal<br />
+      <strong>Net Calorie Goal (Base - Burned):</strong> ${Math.round(netGoal)} kcal
+    `;
+  }
+
+  // Rollerblading calories calculation
+  let bladeCalories = 0;
+  function calculateBladeCalories() {
+    const weight = parseFloat(document.getElementById("weight").value) || 175;
+    const miles = parseFloat(document.getElementById("bladeMiles").value) || 0;
+    const start = document.getElementById("bladeStart").value;
+    const end = document.getElementById("bladeEnd").value;
+    let durationHours = 0;
+    if (start && end) {
+      const [sh, sm] = start.split(":");
+      const [eh, em] = end.split(":");
+      durationHours = ((parseInt(eh)*60 + parseInt(em)) - (parseInt(sh)*60 + parseInt(sm))) / 60;
+      if (durationHours < 0) durationHours = 0; // sanity check
+    }
+    const met = 7.0; // MET value for rollerblading (moderate)
+    const weightKg = weight * 0.453592;
+    const hours = durationHours || (miles / 9);
+    bladeCalories = met * weightKg * hours * 0.25; // modest quarter of estimate
+    document.getElementById("bladeResult").innerText = `Estimated Calories Burned: ${Math.round(bladeCalories)} kcal over ${hours.toFixed(2)} hours.`;
+    updateTotalsDisplay();
+  }
+
+  // Validate that calorie percentages sum to 100%
+  function validateDistribution() {
+    const total = 
+      Number(document.getElementById("pctBreakfast").value) +
+      Number(document.getElementById("pctLunch").value) +
+      Number(document.getElementById("pctSnacks").value) +
+      Number(document.getElementById("pctDinner").value);
+    if (total !== 100) {
+      alert("Calorie distribution percentages must add up to 100%.");
+    }
+  }
+
+  // Calculate Basal Metabolic Rate (BMR) based on Mifflin-St Jeor formula
+  // Weight in kg, height in cm, age assumed 30 for default, no age input for now
+  function calculateBMR(gender, weightLbs, heightFt, heightIn) {
+    const weightKg = weightLbs * 0.453592;
+    const heightCm = ((heightFt * 12) + heightIn) * 2.54;
+    // No age input, default 30
+    const age = 30;
+    let bmr;
+    if (gender === "male") {
+      bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + 5;
+    } else if (gender === "female") {
+      bmr = 10 * weightKg + 6.25 * heightCm - 5 * age - 161;
+    } else {
+      // Nonbinary average of male/female formula
+      bmr = ( (10 * weightKg + 6.25 * heightCm - 5 * age + 5) + (10 * weightKg + 6.25 * heightCm - 5 * age - 161) ) / 2;
+    }
+    return bmr;
+  }
+
+  // Update calorieGoal based on weight loss goal and gender/weight/height input
+  function updateCalorieGoalAuto() {
+    const gender = document.getElementById("gender").value;
+    const weight = parseFloat(document.getElementById("weight").value) || 175;
+    const heightFt = parseInt(document.getElementById("heightFt").value) || 5;
+    const heightIn = parseInt(document.getElementById("heightIn").value) || 10;
+    const weeklyLoss = parseFloat(document.getElementById("weeklyLossGoal").value) || 0;
+
+    // Calculate BMR, then assume sedentary activity factor ~1.2 to get maintenance calories
+    const bmr = calculateBMR(gender, weight, heightFt, heightIn);
+    const maintenanceCalories = bmr * 1.2;
+
+    // 1 lb fat = 3500 calories deficit, so weeklyLoss * 3500 / 7 = daily deficit
+    const dailyDeficit = weeklyLoss * 3500 / 7;
+
+    let newCalorieGoal = maintenanceCalories - dailyDeficit;
+    if (newCalorieGoal < 1000) newCalorieGoal = 1000; // minimum safe floor
+
+    document.getElementById("calorieGoal").value = Math.round(newCalorieGoal);
+    updateTotalsDisplay();
+  }
+
+  // When user manually changes calorie goal, update weekly loss goal
+  function updateWeeklyGoalAuto() {
+    const gender = document.getElementById("gender").value;
+    const weight = parseFloat(document.getElementById("weight").value) || 175;
+    const heightFt = parseInt(document.getElementById("heightFt").value) || 5;
+    const heightIn = parseInt(document.getElementById("heightIn").value) || 10;
+    const calorieGoal = parseFloat(document.getElementById("calorieGoal").value) || 1500;
+
+    const bmr = calculateBMR(gender, weight, heightFt, heightIn);
+    const maintenanceCalories = bmr * 1.2;
+
+    let dailyDeficit = maintenanceCalories - calorieGoal;
+    if (dailyDeficit < 0) dailyDeficit = 0;
+
+    let weeklyLoss = (dailyDeficit * 7) / 3500;
+    document.getElementById("weeklyLossGoal").value = weeklyLoss.toFixed(2);
+    updateTotalsDisplay();
+  }
+
+  // Log weight and store in localStorage + update chart
+  function logWeight() {
+    const val = parseFloat(document.getElementById("dailyWeight").value);
+    if (!val || val < 50 || val > 600) {
+      alert("Please enter a valid weight between 50 and 600 lbs.");
+      return;
+    }
+    let entries = JSON.parse(localStorage.getItem("weightEntries") || "[]");
+    const date = new Date().toLocaleDateString();
+    entries.push({ date, weight: val });
+    localStorage.setItem("weightEntries", JSON.stringify(entries));
+    alert("Weight logged.");
+    location.reload();
+  }
+
+  // Load weight chart
+  function loadWeightChart() {
+    let weightData = JSON.parse(localStorage.getItem("weightEntries") || "[]");
+    const ctx = document.getElementById("weight-progress-chart").getContext("2d");
+    if (window.weightChart) window.weightChart.destroy();
+    window.weightChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: weightData.map(e => e.date),
+        datasets: [{
+          label: 'Weight (lbs)',
+          data: weightData.map(e => e.weight),
+          borderColor: 'blue',
+          fill: false,
+          tension: 0.1
+        }]
+      },
+      options: {
+        scales: {
+          x: { title: { display: true, text: 'Date' } },
+          y: { title: { display: true, text: 'Weight (lbs)' }, min: 50, max: 600 }
+        }
+      }
+    });
+  }
+
+  // NYC weather + electrolyte advice
+  function loadWeatherAndAdvice() {
+    const temperatureF = 89; // hardcoded, can be dynamic later
+    const humidity = 65;
+    document.getElementById("weather").innerText = `Union Square, NYC: ${temperatureF}°F — ${humidity}% humidity.`;
+    if (temperatureF > 86) {
+      document.getElementById("warning").innerText = 
+        "🔥 It's hot! Rehydrate with LMNT or potassium-rich foods (like bananas). Avoid SmartWater—too low in electrolytes. " +
+        "Gatorade, Propel, and VenturePal also underdeliver unless heavily sweating.";
+    }
+  }
+
+  // Initialize app
+  function initApp() {
+    createFoodButtons();
+    updateMealSelectedDisplay("breakfast");
+    updateMealSelectedDisplay("lunch");
+    updateMealSelectedDisplay("snacks");
+    updateMealSelectedDisplay("dinner");
+    updateTotalsDisplay();
+    loadWeightChart();
+    loadWeatherAndAdvice();
+  }
+
+  // Google Maps init placeholder (to avoid errors)
+  function initMap() {}
+
+  // Run on page load
+  window.onload = initApp;
 </script>
 
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDNyTZL3SySu9n5tkcyc9fiU34d2iviE9E&callback=initMap" async defer></script>
 </body>
 </html>
